@@ -102,6 +102,12 @@ export function WidgetFrame({ widgetId, source, manifest, settings }: WidgetFram
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ widgetId, url: p.url, method: p.method, headers: p.headers, body: p.body }),
               });
+              if (!apiRes.ok) {
+                // /api/proxy itself errored — surface the message so the widget can display it
+                const body = await apiRes.json().catch(() => ({})) as Record<string, unknown>;
+                sendResponse(id, undefined, typeof body.error === 'string' ? body.error : `proxy error: HTTP ${apiRes.status}`);
+                return;
+              }
               sendResponse(id, await apiRes.json());
             } catch (err) {
               sendResponse(id, undefined, err instanceof Error ? err.message : 'proxy fetch failed');

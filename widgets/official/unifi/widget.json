@@ -1,0 +1,21 @@
+{
+  "id": "unifi",
+  "name": "Unifi Network",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Monitor your Unifi network: site health, WAN uptime, client counts, and device status. Requires a Unifi API key from account.ui.com.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 300,
+  "permissions": {
+    "proxy": ["https://api.ui.com/ea/**"],
+    "secrets": ["UNIFI_KEY"]
+  },
+  "settings": [
+    {
+      "key": "UNIFI_KEY",
+      "label": "Unifi API Key",
+      "type": "secret"
+    }
+  ]
+}
