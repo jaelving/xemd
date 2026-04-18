@@ -8,6 +8,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   HOST_IMAGE: ghcr.io/${{ github.repository_owner }}/xemd-host
@@ -16,9 +20,11 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
+      security-events: write
 
     steps:
       - name: Checkout
@@ -56,7 +62,56 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push host image
+      # Build single-platform images locally for scanning before push
+      - name: Build host image (scan)
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
+        with:
+          context: .
+          file: apps/host/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: xemd-host:scan
+          cache-from: type=gha,scope=xemd-host
+
+      - name: Build API image (scan)
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: xemd-api:scan
+          cache-from: type=gha,scope=xemd-api
+
+      - name: Scan host image
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          image-ref: xemd-host:scan
+          format: sarif
+          output: trivy-host.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          image-ref: xemd-api:scan
+          format: sarif
+          output: trivy-api.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a # v3.35.2
+        if: always()
+        with:
+          sarif_file: .
+          category: trivy
+
+      # Push multi-platform images only after scans pass
+      - name: Push host image
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: .
@@ -68,7 +123,7 @@ jobs:
           cache-from: type=gha,scope=xemd-host
           cache-to: type=gha,scope=xemd-host,mode=max
 
-      - name: Build and push API image
+      - name: Push API image
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: .

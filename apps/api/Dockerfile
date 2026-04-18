@@ -1,7 +1,7 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/api/package.json ./apps/api/
@@ -21,10 +21,10 @@ RUN pnpm --filter @xemd/widget-types build
 RUN pnpm --filter @xemd/api build
 
 # ---- runtime stage ----
-FROM node:20-alpine AS runtime
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/api/package.json ./apps/api/
@@ -42,6 +42,10 @@ COPY apps/api/src/sdk ./apps/api/dist/sdk
 
 # Official widgets baked into image
 COPY widgets/official /widgets/official
+
+# Run as non-root
+RUN addgroup -S xemd && adduser -S xemd -G xemd
+USER xemd
 
 EXPOSE 3001
 
