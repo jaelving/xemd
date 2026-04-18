@@ -65,7 +65,10 @@ export function useSaveSecret() {
         headers: adminHeaders(),
         body: JSON.stringify({ value }),
       });
-      if (!res.ok) throw new Error('Failed to save secret');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+        throw new Error(`${res.status}: ${body.error ?? 'unknown error'}`);
+      }
     },
   });
 }

@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unifi Network</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #060a12;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.07);
+      --border: rgba(255, 255, 255, 0.08);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59, 130, 246, 0.15);
+      --green: #10b981;
+      --green-dim: rgba(16, 185, 129, 0.12);
+      --yellow: #f59e0b;
+      --yellow-dim: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.12);
+      --text-primary: #f1f5f9;
+      --text-muted: rgba(241, 245, 249, 0.45);
+      --text-dim: rgba(241, 245, 249, 0.25);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Overlay states ─────────────────────────────────────────── */
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    #overlay.hidden { display: none; }
+
+    .overlay-card {
+      text-align: center;
+      padding: 48px 56px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      max-width: 520px;
+    }
+
+    .overlay-icon {
+      font-size: 3.5rem;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .overlay-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .overlay-body {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .overlay-card.error {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: var(--red-dim);
+    }
+
+    .overlay-card.error .overlay-title { color: var(--red); }
+
+    /* Spinner */
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Main layout ─────────────────────────────────────────────── */
+
+    #app {
+      display: grid;
+      grid-template-columns: 280px 260px 1fr;
+      gap: 16px;
+      padding: 20px;
+      height: 100vh;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Left: Site panel ─────────────────────────────────────────── */
+
+    #panel-site::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue), #818cf8);
+      border-radius: 16px 16px 0 0;
+    }
+
+    .panel-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .site-name {
+      font-size: 1.65rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+
+    .site-isp {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: auto;
+    }
+
+    .wan-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .wan-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .wan-value {
+      font-size: 3.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .wan-value span { font-size: 2rem; }
+
+    .wan-value.healthy { color: var(--green); }
+    .wan-value.warning { color: var(--yellow); }
+    .wan-value.critical { color: var(--red); }
+
+    .wan-tz {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ── Center: Stats panel ──────────────────────────────────────── */
+
+    #panel-stats {
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .device-counts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .count-pill {
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .count-pill.online {
+      background: var(--green-dim);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .count-pill.offline {
+      background: var(--red-dim);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .count-pill-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .count-pill.online .count-pill-label { color: var(--green); }
+    .count-pill.offline .count-pill-label { color: var(--red); }
+
+    .count-pill-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .count-pill.online .count-pill-value { color: var(--green); }
+    .count-pill.offline .count-pill-value { color: var(--red); }
+
+    /* ── Right: Device table ──────────────────────────────────────── */
+
+    #panel-devices {
+      min-height: 0;
+    }
+
+    .devices-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .devices-title {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .devices-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+
+    .table-head {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1.5fr 1fr 1.5fr;
+      gap: 8px;
+      padding: 0 12px 8px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .table-head .col-status,
+    .table-head .col-fw { text-align: right; }
+
+    .device-list {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .device-list::-webkit-scrollbar { width: 3px; }
+    .device-list::-webkit-scrollbar-track { background: transparent; }
+    .device-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .device-row {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1.5fr 1fr 1.5fr;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,0.02);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .device-row:hover {
+      background: var(--surface-hover);
+      border-color: var(--border);
+    }
+
+    .col-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      overflow: hidden;
+    }
+
+    .col-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .gw-badge {
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 4px;
+      padding: 1px 4px;
+      flex-shrink: 0;
+    }
+
+    .col-model {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .col-ip {
+      font-size: 0.8rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: rgba(241,245,249,0.7);
+    }
+
+    .col-status { text-align: right; }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .status-pill.online {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-pill.offline {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .online .status-dot { animation: pulse-green 2s ease-in-out infinite; }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .col-fw {
+      text-align: right;
+      font-size: 0.78rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text-muted);
+    }
+
+    .update-badge {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      font-family: inherit;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay (no key / loading / error) -->
+  <div id="overlay">
+    <div id="overlay-card" class="overlay-card">
+      <div id="overlay-icon" class="overlay-icon"></div>
+      <div id="overlay-title" class="overlay-title"></div>
+      <div id="overlay-body" class="overlay-body"></div>
+    </div>
+  </div>
+
+  <!-- Main UI (hidden until data loads) -->
+  <div id="app" style="display:none;">
+
+    <!-- Left: site info -->
+    <div id="panel-site" class="panel">
+      <div class="panel-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+        Site Manager
+      </div>
+      <div id="site-name" class="site-name">—</div>
+      <div id="site-isp" class="site-isp">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span id="site-isp-name">—</span>
+      </div>
+      <div class="wan-section">
+        <div class="wan-label">WAN Uptime</div>
+        <div id="wan-value" class="wan-value">—<span>%</span></div>
+        <div id="wan-tz" class="wan-tz"></div>
+      </div>
+    </div>
+
+    <!-- Center: stats -->
+    <div id="panel-stats" class="panel">
+      <div class="stat-card">
+        <div class="stat-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
+          Network Devices
+        </div>
+        <div id="stat-devices-total" class="stat-value">—</div>
+        <div class="device-counts">
+          <div class="count-pill online">
+            <span class="count-pill-label">Online</span>
+            <span id="stat-devices-online" class="count-pill-value">—</span>
+          </div>
+          <div class="count-pill offline">
+            <span class="count-pill-label">Offline</span>
+            <span id="stat-devices-offline" class="count-pill-value">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+          WiFi Clients
+        </div>
+        <div id="stat-wifi" class="stat-value">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <line x1="6" y1="8" x2="6.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/>
+            <line x1="6" y1="16" x2="6.01" y2="16"/>
+          </svg>
+          Wired Clients
+        </div>
+        <div id="stat-wired" class="stat-value">—</div>
+      </div>
+    </div>
+
+    <!-- Right: device table -->
+    <div id="panel-devices" class="panel">
+      <div class="devices-header">
+        <span class="devices-title">Device Infrastructure</span>
+        <span id="devices-badge" class="devices-badge">0 Devices</span>
+      </div>
+      <div class="table-head">
+        <div>Name</div>
+        <div>Model</div>
+        <div>IP Address</div>
+        <div class="col-status">Status</div>
+        <div class="col-fw">Firmware</div>
+      </div>
+      <div id="device-list" class="device-list"></div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    const SITES_URL  = 'https://api.ui.com/ea/sites';
+    const DEVICES_URL = 'https://api.ui.com/ea/devices';
+    const API_HEADER  = { 'X-API-Key': '{{secret:UNIFI_KEY}}' };
+
+    // ── Overlay helpers ──────────────────────────────────────────────
+
+    function showOverlay(type, icon, title, body) {
+      const overlay = document.getElementById('overlay');
+      const card    = document.getElementById('overlay-card');
+      overlay.classList.remove('hidden');
+      card.className = 'overlay-card' + (type ? ` ${type}` : '');
+      document.getElementById('overlay-icon').textContent  = icon;
+      document.getElementById('overlay-title').textContent = title;
+      document.getElementById('overlay-body').textContent  = body;
+    }
+
+    function showLoading() {
+      const overlay = document.getElementById('overlay');
+      overlay.classList.remove('hidden');
+      document.getElementById('overlay-card').className = 'overlay-card';
+      document.getElementById('overlay-icon').innerHTML =
+        '<div class="spinner"></div>';
+      document.getElementById('overlay-title').textContent = 'Connecting to Unifi…';
+      document.getElementById('overlay-body').textContent  = '';
+    }
+
+    function hideOverlay() {
+      document.getElementById('overlay').classList.add('hidden');
+      document.getElementById('app').style.display = 'grid';
+    }
+
+    // ── Data fetching ─────────────────────────────────────────────────
+
+    async function fetchJson(url) {
+      const res = await xemd.proxy.fetch(url, { headers: API_HEADER });
+      if (!res.ok) {
+        const status = res.status != null ? `HTTP ${res.status}` : 'unknown error';
+        throw new Error(status);
+      }
+      return res.json();
+    }
+
+    // ── Rendering ──────────────────────────────────────────────────────
+
+    function wanClass(pct) {
+      if (pct >= 99) return 'healthy';
+      if (pct >= 95) return 'warning';
+      return 'critical';
+    }
+
+    function renderSite(site) {
+      const counts = site?.statistics?.counts   || {};
+      const pct    = site?.statistics?.percentages?.wanUptime ?? 0;
+      const total  = counts.totalDevice   || 0;
+      const offline = counts.offlineDevice || 0;
+      const online  = total - offline;
+
+      document.getElementById('site-name').textContent    = site?.meta?.desc || 'Unifi Site';
+      document.getElementById('site-isp-name').textContent = site?.statistics?.ispInfo?.name || '—';
+
+      const wanEl = document.getElementById('wan-value');
+      wanEl.className = `wan-value ${wanClass(pct)}`;
+      wanEl.innerHTML = `${pct.toFixed(1)}<span>%</span>`;
+
+      const tz = site?.meta?.timezone?.replace(/_/g, ' ') || '';
+      document.getElementById('wan-tz').textContent = tz ? `Timezone: ${tz}` : '';
+
+      document.getElementById('stat-devices-total').textContent  = total;
+      document.getElementById('stat-devices-online').textContent  = online;
+      document.getElementById('stat-devices-offline').textContent = offline;
+      document.getElementById('stat-wifi').textContent  = counts.wifiClient  || 0;
+      document.getElementById('stat-wired').textContent = counts.wiredClient || 0;
+    }
+
+    function renderDevices(devices) {
+      const list = document.getElementById('device-list');
+      document.getElementById('devices-badge').textContent =
+        `${devices.length} Device${devices.length !== 1 ? 's' : ''}`;
+
+      list.innerHTML = '';
+      for (const d of devices) {
+        const isOnline = d.status === 'online';
+        const row = document.createElement('div');
+        row.className = 'device-row';
+        row.innerHTML = `
+          <div class="col-name">
+            <span>${d.name || d.shortname || 'Unknown'}</span>
+            ${d.isConsole ? '<span class="gw-badge">GW</span>' : ''}
+          </div>
+          <div class="col-model">${d.model || '—'}</div>
+          <div class="col-ip">${d.ip || '—'}</div>
+          <div class="col-status">
+            <span class="status-pill ${isOnline ? 'online' : 'offline'}">
+              <span class="status-dot"></span>
+              ${isOnline ? 'Online' : 'Offline'}
+            </span>
+          </div>
+          <div class="col-fw">
+            ${d.version || '—'}
+            ${d.firmwareStatus === 'update_available'
+              ? '<span class="update-badge">Update</span>'
+              : ''}
+          </div>`;
+        list.appendChild(row);
+      }
+    }
+
+    // ── Main ────────────────────────────────────────────────────────────
+
+    async function load() {
+      const [sitesRes, devicesRes] = await Promise.all([
+        fetchJson(SITES_URL),
+        fetchJson(DEVICES_URL),
+      ]);
+
+      const site    = sitesRes?.data?.[0];
+      const devices = devicesRes?.data?.[0]?.devices || [];
+
+      renderSite(site);
+      renderDevices(devices);
+    }
+
+    async function init() {
+      const apiKey = await xemd.secrets.get('UNIFI_KEY');
+
+      if (!apiKey) {
+        showOverlay(
+          '',
+          '🔑',
+          'Unifi API Key Required',
+          'Open Settings and enter your Unifi API key to get started.',
+        );
+        xemd.ready();
+        return;
+      }
+
+      showLoading();
+
+      try {
+        await load();
+        hideOverlay();
+      } catch (err) {
+        showOverlay(
+          'error',
+          '✕',
+          'Failed to Load Unifi Data',
+          err?.message || 'Check your API key or connection to the Unifi API.',
+        );
+      }
+
+      xemd.ready();
+    }
+
+    xemd.onRefresh(async () => {
+      const apiKey = await xemd.secrets.get('UNIFI_KEY');
+      if (!apiKey) return;
+      try {
+        await load();
+        hideOverlay();
+      } catch {
+        // Keep existing data visible on transient errors
+      }
+    });
+
+    xemd.onSettingsChange(async () => {
+      const apiKey = await xemd.secrets.get('UNIFI_KEY');
+      if (!apiKey) {
+        showOverlay('', '🔑', 'Unifi API Key Required',
+          'Open Settings and enter your Unifi API key to get started.');
+        return;
+      }
+      showLoading();
+      try {
+        await load();
+        hideOverlay();
+      } catch (err) {
+        showOverlay('error', '✕', 'Failed to Load Unifi Data',
+          err?.message || 'Check your API key or connection to the Unifi API.');
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
