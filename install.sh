@@ -73,5 +73,7 @@ printf '  Dashboard   →  http://localhost:%s\n' "$HOST_PORT"
 printf '  Admin panel →  http://localhost:%s/#/admin\n\n' "$HOST_PORT"
 printf '  \033[1mAdmin token\033[0m (save this — you need it to access the admin panel):\n'
 printf '  %s\n\n' "$ADMIN_TOKEN"
+printf '  Lost it? Retrieve it any time with:\n'
+printf '  grep XEMD_ADMIN_TOKEN %s/.env\n\n' "$INSTALL_DIR"
 printf '  Files are in: %s\n' "$INSTALL_DIR"
 printf '  To stop:      docker compose -f %s/docker-compose.yml down\n\n' "$INSTALL_DIR"
