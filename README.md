@@ -78,32 +78,25 @@ The legacy single-object format `"dimensions": { "w": 2560, "h": 720 }` is still
 
 **Requirements:** Docker and Docker Compose.
 
-The Docker images are hosted on GitHub Container Registry (GHCR). Log in before pulling:
-
 ```bash
-docker login ghcr.io -u YOUR_GITHUB_USERNAME
-# enter a GitHub personal access token with read:packages scope
-# (Settings → Developer settings → Personal access tokens → Fine-grained → read:packages)
+curl -fsSL https://raw.githubusercontent.com/jaelving/xemd/main/install.sh | bash
 ```
 
-Then:
-
-```bash
-git clone https://github.com/jaelving/xemd.git
-cd xemd
-cp .env.example .env
-# Edit .env — two values are required:
-#   XEMD_MASTER_KEY=$(openssl rand -hex 32)   # encrypts stored API keys
-#   XEMD_ADMIN_TOKEN=$(openssl rand -hex 32)  # protects the admin panel
-docker compose up -d
-```
+That's it. The script checks your environment, generates secure keys, pulls the images, and starts the stack. When it finishes, your admin token is printed once — save it.
 
 | URL | Purpose |
 |---|---|
 | `http://localhost:6600` | Kiosk view (full-screen dashboard) |
 | `http://localhost:6600/#/admin` | Admin panel |
 
-Replace `6600` with your configured `XEMD_HOST_PORT` if you changed it.
+**Options** — pass env vars before the command to customise the install:
+
+```bash
+XEMD_HOST_PORT=8080 XEMD_DIR=~/my-xemd curl -fsSL https://raw.githubusercontent.com/jaelving/xemd/main/install.sh | bash
+```
+
+**To stop:** `docker compose -f ~/xemd/docker-compose.yml down`  
+**To upgrade:** `docker compose -f ~/xemd/docker-compose.yml pull && docker compose -f ~/xemd/docker-compose.yml up -d`
 
 ---
 

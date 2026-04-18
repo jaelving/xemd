@@ -16,30 +16,24 @@ No other local tooling is required. The images are pre-built and pulled from GHC
 
 ## Quick Start
 
-The Docker images are hosted on GitHub Container Registry (GHCR). Log in before pulling:
-
 ```bash
-docker login ghcr.io -u YOUR_GITHUB_USERNAME
-# enter a GitHub personal access token with read:packages scope
+curl -fsSL https://raw.githubusercontent.com/jaelving/xemd/main/install.sh | bash
 ```
 
-Then clone and configure:
+The script checks for Docker, generates secure random keys, pulls the images, and starts the stack. When it finishes, it prints your admin token — save it somewhere safe.
+
+By default, files are installed to `~/xemd`. To customise:
 
 ```bash
-git clone https://github.com/jaelving/xemd.git
-cd xemd
+XEMD_HOST_PORT=8080 XEMD_DIR=~/my-xemd curl -fsSL https://raw.githubusercontent.com/jaelving/xemd/main/install.sh | bash
+```
+
+**Manual install** — if you prefer not to pipe to bash:
+
+```bash
+git clone https://github.com/jaelving/xemd.git && cd xemd
 cp .env.example .env
-```
-
-Open `.env` and set both required values:
-
-```bash
-openssl rand -hex 32   # run twice — once for XEMD_MASTER_KEY, once for XEMD_ADMIN_TOKEN
-```
-
-Then start the stack:
-
-```bash
+# Edit .env: set XEMD_MASTER_KEY and XEMD_ADMIN_TOKEN (openssl rand -hex 32)
 docker compose up -d
 ```
 
