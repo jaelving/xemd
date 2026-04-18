@@ -15,7 +15,9 @@ function request(method, payload) {
       else resolve(event.data.result);
     };
     window.addEventListener('message', handler);
-    window.parent.postMessage({ type: 'xemd:request', id, method, payload }, window.location.origin);
+    // Use '*' because sandboxed iframes have origin 'null', not the host origin.
+    // The host validates event.source before acting on any message.
+    window.parent.postMessage({ type: 'xemd:request', id, method, payload }, '*');
   });
 }
 
