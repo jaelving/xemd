@@ -1,9 +1,9 @@
 # ---- build stage ----
-FROM node:20-alpine AS builder
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Copy workspace manifests first (layer cache)
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
@@ -26,7 +26,7 @@ RUN pnpm --filter @xemd/widget-types build
 RUN pnpm --filter @xemd/host build
 
 # ---- runtime stage ----
-FROM nginx:alpine AS runtime
+FROM nginx:alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de AS runtime
 
 # Copy built assets
 COPY --from=builder /app/apps/host/dist /usr/share/nginx/html
