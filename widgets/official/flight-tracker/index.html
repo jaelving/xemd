@@ -1,0 +1,583 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 2560px;
+      height: 720px;
+      overflow: hidden;
+      background: #080b14;
+      font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif;
+      user-select: none;
+      color: #fff;
+    }
+
+    /* Map fills entire panel */
+    #map {
+      position: absolute;
+      inset: 0;
+      width: 2560px;
+      height: 720px;
+      z-index: 0;
+    }
+    .leaflet-control-attribution,
+    .leaflet-control-zoom { display: none !important; }
+
+    /* Shared glass panel style */
+    .hud-glass {
+      background: rgba(8, 11, 20, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    /* Header — top-left */
+    #hud-header {
+      position: absolute;
+      top: 32px;
+      left: 40px;
+      z-index: 1000;
+      border-radius: 20px;
+      padding: 22px 32px;
+      min-width: 280px;
+    }
+    .radar-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 8px;
+    }
+    #live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4af0c4;
+      flex-shrink: 0;
+      animation: liveBlip 2s ease-in-out infinite;
+    }
+    @keyframes liveBlip {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 240, 196, 0.6); }
+      50%       { opacity: 0.35; box-shadow: 0 0 0 6px rgba(74, 240, 196, 0); }
+    }
+    #hud-city {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 5px;
+    }
+    #hud-sub {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    #hud-sub .accent { color: #4af0c4; font-weight: 600; }
+    #hud-sub .err    { color: #f0614a; }
+
+    /* Stats bar — bottom-left */
+    #hud-stats {
+      position: absolute;
+      bottom: 32px;
+      left: 40px;
+      z-index: 1000;
+      display: flex;
+      gap: 12px;
+    }
+    .stat-card {
+      border-radius: 16px;
+      padding: 14px 24px;
+      min-width: 148px;
+    }
+    .s-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.38);
+      margin-bottom: 6px;
+    }
+    .s-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .s-unit {
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.38);
+      margin-left: 3px;
+    }
+    #stat-time { font-size: 1.1rem !important; letter-spacing: 0.03em; }
+
+    /* Aircraft list — right side */
+    #hud-list {
+      position: absolute;
+      top: 32px;
+      right: 40px;
+      bottom: 32px;
+      z-index: 1000;
+      width: 370px;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .list-title {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.38);
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    #ac-list {
+      flex: 1;
+      overflow: hidden;
+    }
+    .ac-row {
+      display: grid;
+      grid-template-columns: 88px 50px 1fr 1fr;
+      align-items: center;
+      padding: 9px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      gap: 0;
+    }
+    .ac-row:last-child  { border-bottom: none; }
+    .ac-row.has-route   { padding-bottom: 6px; }
+
+    .ac-call {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+    .ac-type {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.35);
+    }
+    .ac-alt {
+      font-size: 0.8rem;
+      color: #4af0c4;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .ac-alt.on-ground { color: #f0a84a; }
+    .ac-spd {
+      font-size: 0.76rem;
+      color: rgba(255, 255, 255, 0.5);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .ac-route {
+      grid-column: 1 / -1;
+      font-size: 0.64rem;
+      color: rgba(255, 255, 255, 0.28);
+      padding-top: 3px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Plane SVG markers */
+    .plane-icon { pointer-events: none; }
+
+    /* Loading overlay (shown until first data load) */
+    #loading {
+      position: absolute;
+      inset: 0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #080b14;
+    }
+    #loading .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(74, 240, 196, 0.2);
+      border-top-color: #4af0c4;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="map"></div>
+
+  <div id="hud-header" class="hud-glass">
+    <div class="radar-label"><div id="live-dot"></div>Live Radar</div>
+    <div id="hud-city">Loading…</div>
+    <div id="hud-sub">Scanning airspace…</div>
+  </div>
+
+  <div id="hud-stats">
+    <div class="stat-card hud-glass">
+      <div class="s-label">Aircraft</div>
+      <div class="s-val" id="stat-count">—</div>
+    </div>
+    <div class="stat-card hud-glass">
+      <div class="s-label">Highest</div>
+      <div class="s-val">
+        <span id="stat-alt">—</span><span class="s-unit" id="stat-alt-unit">ft</span>
+      </div>
+    </div>
+    <div class="stat-card hud-glass">
+      <div class="s-label">Fastest</div>
+      <div class="s-val">
+        <span id="stat-spd">—</span><span class="s-unit" id="stat-spd-unit">kts</span>
+      </div>
+    </div>
+    <div class="stat-card hud-glass">
+      <div class="s-label">Updated</div>
+      <div class="s-val" id="stat-time">—</div>
+    </div>
+  </div>
+
+  <div id="hud-list" class="hud-glass">
+    <div class="list-title">Nearby Traffic</div>
+    <div id="ac-list"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    // City / location data
+    // Coordinates centred on the primary international airport for each city.
+    const CITIES = {
+      'Atlanta':       { lat:  33.6407, lon:  -84.4277 },
+      'Amsterdam':     { lat:  52.3086, lon:    4.7639 },
+      'Bangkok':       { lat:  13.6811, lon:  100.7470 },
+      'Beijing':       { lat:  40.0799, lon:  116.5850 },
+      'Cape Town':     { lat: -33.9715, lon:   18.6021 },
+      'Chicago':       { lat:  41.9742, lon:  -87.9073 },
+      'Dallas':        { lat:  32.8998, lon:  -97.0403 },
+      'Denver':        { lat:  39.8561, lon: -104.6737 },
+      'Dubai':         { lat:  25.2532, lon:   55.3657 },
+      'Frankfurt':     { lat:  50.0379, lon:    8.5622 },
+      'Hong Kong':     { lat:  22.3080, lon:  113.9185 },
+      'Istanbul':      { lat:  41.2753, lon:   28.7519 },
+      'London':        { lat:  51.4775, lon:   -0.4614 },
+      'Los Angeles':   { lat:  33.9425, lon: -118.4081 },
+      'Madrid':        { lat:  40.4983, lon:   -3.5676 },
+      'Mexico City':   { lat:  19.4363, lon:  -99.0721 },
+      'Miami':         { lat:  25.7959, lon:  -80.2870 },
+      'Mumbai':        { lat:  19.0896, lon:   72.8656 },
+      'New York':      { lat:  40.6413, lon:  -73.7781 },
+      'Paris':         { lat:  49.0097, lon:    2.5479 },
+      'Reykjavik':     { lat:  63.9850, lon:  -22.6056 },
+      'San Francisco': { lat:  37.6213, lon: -122.3790 },
+      'São Paulo':     { lat: -23.4356, lon:  -46.4731 },
+      'Seattle':       { lat:  47.4502, lon: -122.3088 },
+      'Seoul':         { lat:  37.4602, lon:  126.4407 },
+      'Singapore':     { lat:   1.3644, lon:  103.9915 },
+      'Sydney':        { lat: -33.9399, lon:  151.1753 },
+      'Tokyo':         { lat:  35.5494, lon:  139.7798 },
+      'Toronto':       { lat:  43.6777, lon:  -79.6248 },
+      'Zurich':        { lat:  47.4647, lon:    8.5492 },
+    };
+
+    // Module-level state
+    let settings   = {};
+    let map        = null;
+    let markers    = {};      // ICAO hex → L.Marker
+    let routeCache = {};      // callsign → { origin, dest } | null
+    let hasKey     = false;
+    let lastSorted = [];      // most-recent sorted aircraft; used for list re-renders
+
+    // Sanitization
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    }
+
+    // Helpers
+
+    /**
+     * Compute Leaflet zoom so the scan diameter fits the 2560 px panel.
+     * Uses a 2.4× expansion factor so surrounding context is visible.
+     */
+    function radiusToZoom(radiusNm, lat) {
+      const diameterKm    = radiusNm * 1.852 * 2.4;
+      const tilesAcross   = 2560 / 256;   // = 10
+      const earthCircumKm = 40075 * Math.cos(lat * Math.PI / 180);
+      const z = Math.log2(tilesAcross * earthCircumKm / diameterKm);
+      return Math.round(Math.min(13, Math.max(7, z)));
+    }
+
+    /** Whether an aircraft is considered on the ground. */
+    function isGround(altBaro) {
+      return altBaro === 'ground' || Number(altBaro) <= 50;
+    }
+
+    /** Numeric altitude for sorting (ground / null → -1). */
+    function sortAlt(altBaro) {
+      if (altBaro === 'ground' || altBaro == null) return -1;
+      const n = Number(altBaro);
+      return isNaN(n) ? -1 : n;
+    }
+
+    /** Altitude display string (no unit suffix). */
+    function fmtAlt(altBaro, units) {
+      if (isGround(altBaro) || altBaro == null) return 'GND';
+      const ft = Number(altBaro);
+      if (isNaN(ft)) return 'GND';
+      if (units === 'metric') return Math.round(ft * 0.3048).toLocaleString();
+      // Round to nearest 100 ft for readability
+      return (Math.round(ft / 100) * 100).toLocaleString();
+    }
+
+    /** Speed display string (no unit suffix). */
+    function fmtSpd(gs, units) {
+      const n = Number(gs);
+      if (isNaN(n) || n < 1) return '—';
+      return units === 'metric'
+        ? Math.round(n * 1.852).toLocaleString()
+        : Math.round(n).toLocaleString();
+    }
+
+    function altUnit(units) { return units === 'metric' ? 'm'    : 'ft';  }
+    function spdUnit(units) { return units === 'metric' ? 'km/h' : 'kts'; }
+
+    /**
+     * SVG plane icon — a filled arrow pointing north (up), rotated by track.
+     * Airborne = cyan; on ground = amber.
+     */
+    function planeIconHtml(track, ground) {
+      const color = ground ? '#f0a84a' : '#4af0c4';
+      const deg   = track ?? 0;
+      return `<svg style="transform:rotate(${deg}deg);display:block;"
+                   width="24" height="24" viewBox="0 0 24 24" fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2 L7 20 L12 16 L17 20 Z"
+              fill="${color}" opacity="0.92"
+              stroke="rgba(0,0,0,0.45)" stroke-width="0.8"/>
+        <path d="M4 11 L12 15 L20 11"
+              stroke="${color}" stroke-width="1.5" fill="none"
+              stroke-linecap="round" opacity="0.65"/>
+      </svg>`;
+    }
+
+    // Leaflet map setup
+
+    function initMap(lat, lon, zoom) {
+      if (map) { map.remove(); map = null; markers = {}; }
+      map = L.map('map', {
+        center:             [lat, lon],
+        zoom,
+        zoomControl:        false,
+        attributionControl: false,
+        dragging:           false,
+        touchZoom:          false,
+        doubleClickZoom:    false,
+        scrollWheelZoom:    false,
+        boxZoom:            false,
+        keyboard:           false,
+      });
+      // CartoDB Dark Matter — free, no API key, excellent dark basemap
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd',
+        maxZoom:    19,
+      }).addTo(map);
+    }
+
+    // FlightAware route enrichment (optional)
+
+    /**
+     * Fetch origin/destination for a callsign via FlightAware AeroAPI.
+     * Results are cached; returns null if no key or request fails.
+     */
+    async function fetchRoute(callsign) {
+      if (!hasKey || !callsign) return null;
+      if (callsign in routeCache)  return routeCache[callsign];
+
+      // Mark pending to prevent duplicate concurrent requests
+      routeCache[callsign] = null;
+      try {
+        const res = await xemd.proxy.fetch(
+          `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(callsign)}?max_pages=1`,
+          { headers: { 'x-apikey': '{{secret:flightaware_key}}' } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const fl   = data.flights?.[0];
+        if (!fl)   return null;
+        const route = {
+          origin: fl.origin?.code_iata      ?? fl.origin?.code_icao      ?? null,
+          dest:   fl.destination?.code_iata ?? fl.destination?.code_icao ?? null,
+        };
+        routeCache[callsign] = route;
+        return route;
+      } catch {
+        return null;
+      }
+    }
+
+    // ADS-B data from airplanes.live
+
+    async function fetchAircraft(lat, lon, radiusNm) {
+      const url = `https://api.airplanes.live/v2/point/${lat}/${lon}/${radiusNm}`;
+      const res = await xemd.proxy.fetch(url);
+      if (!res.ok) throw new Error(`airplanes.live HTTP ${res.status}`);
+      const data = await res.json();
+      // Discard entries without a valid position fix
+      return (data.ac ?? []).filter(a => a.lat != null && a.lon != null);
+    }
+
+    // Aircraft list renderer
+
+    function renderList() {
+      const units = settings.units ?? 'imperial';
+      const rows  = lastSorted.map(ac => {
+        const ground   = isGround(ac.alt_baro);
+        const callsign = (ac.flight ?? ac.hex ?? '—').trim() || (ac.hex ?? '—');
+        const type     = (ac.t ?? '').slice(0, 6) || '—';
+        const altStr   = fmtAlt(ac.alt_baro, units);
+        const spdStr   = fmtSpd(ac.gs, units);
+        const cached   = routeCache[callsign];
+        const routeStr = (cached?.origin && cached?.dest)
+          ? `${cached.origin} → ${cached.dest}`
+          : '';
+        return `<div class="ac-row${routeStr ? ' has-route' : ''}">
+          <div class="ac-call">${escapeHtml(callsign)}</div>
+          <div class="ac-type">${escapeHtml(type)}</div>
+          <div class="ac-alt${ground ? ' on-ground' : ''}">${escapeHtml(altStr)}</div>
+          <div class="ac-spd">${escapeHtml(spdStr)}</div>
+          ${routeStr ? `<div class="ac-route">${escapeHtml(routeStr)}</div>` : ''}
+        </div>`;
+      }).join('');
+
+      document.getElementById('ac-list').innerHTML = rows ||
+        '<div style="padding:20px 24px;color:rgba(255,255,255,0.3);font-size:0.82rem;">No aircraft in range</div>';
+    }
+
+    // Main render cycle
+
+    async function render() {
+      const city     = settings.location ?? 'New York';
+      const radiusNm = Math.max(10, Math.min(100, Number(settings.radius) || 25));
+      const units    = settings.units ?? 'imperial';
+
+      const loc  = CITIES[city] ?? CITIES['New York'];
+      const zoom = radiusToZoom(radiusNm, loc.lat);
+
+      // Initialise map on first load; recentre on settings change
+      if (!map) {
+        initMap(loc.lat, loc.lon, zoom);
+      } else {
+        map.setView([loc.lat, loc.lon], zoom);
+      }
+
+      document.getElementById('hud-city').textContent         = city;
+      document.getElementById('stat-alt-unit').textContent    = altUnit(units);
+      document.getElementById('stat-spd-unit').textContent    = spdUnit(units);
+
+      // Fetch ADS-B data
+      let aircraft = [];
+      try {
+        aircraft = await fetchAircraft(loc.lat, loc.lon, radiusNm);
+      } catch (err) {
+        console.error('[radar] fetch error:', err);
+        document.getElementById('hud-sub').innerHTML =
+          '<span class="err">Data unavailable — will retry</span>';
+        return;
+      }
+
+      // Header
+      document.getElementById('hud-sub').innerHTML =
+        `<span class="accent">${aircraft.length}</span> aircraft · ${radiusNm} nm radius`;
+
+      // Stats
+      const alts   = aircraft.map(a => sortAlt(a.alt_baro)).filter(v => v > 50);
+      const spds   = aircraft.map(a => Number(a.gs)).filter(v => !isNaN(v) && v > 1);
+      const maxAlt = alts.length ? Math.max(...alts) : null;
+      const maxSpd = spds.length ? Math.max(...spds) : null;
+
+      document.getElementById('stat-count').textContent = aircraft.length;
+      document.getElementById('stat-alt').textContent   = maxAlt != null ? fmtAlt(maxAlt, units) : '—';
+      document.getElementById('stat-spd').textContent   = maxSpd != null ? fmtSpd(maxSpd, units) : '—';
+      document.getElementById('stat-time').textContent  =
+        new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      // Plane markers
+      const seen = new Set();
+      for (const ac of aircraft) {
+        seen.add(ac.hex);
+        const ground = isGround(ac.alt_baro);
+        const icon   = L.divIcon({
+          html:       planeIconHtml(ac.track, ground),
+          className:  'plane-icon',
+          iconSize:   [24, 24],
+          iconAnchor: [12, 12],
+        });
+        if (markers[ac.hex]) {
+          markers[ac.hex].setLatLng([ac.lat, ac.lon]).setIcon(icon);
+        } else {
+          markers[ac.hex] = L.marker(
+            [ac.lat, ac.lon],
+            { icon, interactive: false }
+          ).addTo(map);
+        }
+      }
+      // Remove aircraft that have left the area or gone stale
+      for (const hex of Object.keys(markers)) {
+        if (!seen.has(hex)) {
+          markers[hex].remove();
+          delete markers[hex];
+        }
+      }
+
+      // Aircraft list
+      // Top 14 by altitude, highest first
+      lastSorted = [...aircraft]
+        .sort((a, b) => sortAlt(b.alt_baro) - sortAlt(a.alt_baro))
+        .slice(0, 14);
+      renderList();
+
+      // Background route enrichment (FlightAware)
+      // Fire-and-forget for top 8 aircraft; re-renders list as each resolves.
+      if (hasKey) {
+        for (const ac of lastSorted.slice(0, 8)) {
+          const cs = (ac.flight ?? '').trim();
+          if (cs && !(cs in routeCache)) {
+            fetchRoute(cs).then(() => renderList());
+          }
+        }
+      }
+    }
+
+    // Bootstrap
+    settings = await xemd.settings.get();
+    hasKey   = !!(await xemd.secrets.get('flightaware_key'));
+
+    await render();
+
+    document.getElementById('loading').style.display = 'none';
+    xemd.ready();
+
+    xemd.onRefresh(() => render());
+
+    xemd.onSettingsChange(s => {
+      settings   = s;
+      routeCache = {};   // clear cached routes; city may have changed
+      render();
+    });
+  </script>
+</body>
+</html>

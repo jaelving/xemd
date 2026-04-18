@@ -1,0 +1,53 @@
+{
+  "id": "flight-tracker",
+  "name": "Live Radar",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Live ADS-B radar map showing all aircraft within a configurable radius of your chosen city. Powered by airplanes.live (free, no key required). Optional FlightAware AeroAPI integration adds origin and destination to each flight.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 30,
+  "permissions": {
+    "proxy": [
+      "https://api.airplanes.live/**",
+      "https://aeroapi.flightaware.com/**"
+    ],
+    "secrets": ["flightaware_key"]
+  },
+  "settings": [
+    {
+      "key": "location",
+      "label": "Location",
+      "type": "enum",
+      "options": [
+        "Atlanta", "Amsterdam", "Bangkok", "Beijing", "Cape Town",
+        "Chicago", "Dallas", "Denver", "Dubai", "Frankfurt",
+        "Hong Kong", "Istanbul", "London", "Los Angeles", "Madrid",
+        "Mexico City", "Miami", "Mumbai", "New York", "Paris",
+        "Reykjavik", "San Francisco", "São Paulo", "Seattle", "Seoul",
+        "Singapore", "Sydney", "Tokyo", "Toronto", "Zurich"
+      ],
+      "default": "New York"
+    },
+    {
+      "key": "radius",
+      "label": "Radius (nautical miles)",
+      "type": "number",
+      "default": 25,
+      "min": 10,
+      "max": 100
+    },
+    {
+      "key": "units",
+      "label": "Units",
+      "type": "enum",
+      "options": ["imperial", "metric"],
+      "default": "imperial"
+    },
+    {
+      "key": "flightaware_key",
+      "label": "FlightAware AeroAPI Key (optional — adds origin/dest)",
+      "type": "secret"
+    }
+  ]
+}

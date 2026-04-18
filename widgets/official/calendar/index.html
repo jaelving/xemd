@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 2560px;
+      height: 720px;
+      overflow: hidden;
+      background: #080b14;
+      font-family: 'SF Pro Display', -apple-system, system-ui, sans-serif;
+      user-select: none;
+      color: #fff;
+      display: flex;
+      flex-direction: row;
+    }
+
+    /* Hero date panel — left */
+    #hero {
+      width: 430px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 44px 28px;
+      /* Atmospheric cyan radial glow centred on the big number */
+      background: radial-gradient(
+        ellipse 340px 260px at 50% 46%,
+        rgba(74, 240, 196, 0.07) 0%,
+        transparent 70%
+      );
+    }
+    #hero-day {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.32);
+      margin-bottom: 2px;
+    }
+    #hero-date {
+      font-size: 10rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      margin: 2px 0 10px;
+      /* White → pale-cyan gradient gives the number depth */
+      background: linear-gradient(to bottom, #ffffff 30%, #b8f5e8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #hero-month {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #4af0c4;
+    }
+    #hero-week {
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.2);
+      margin-top: 18px;
+    }
+
+    /* Vertical divider */
+    #divider {
+      width: 1px;
+      flex-shrink: 0;
+      align-self: stretch;
+      margin: 48px 0;
+      /* Cyan-tinted so it reads as part of the accent language */
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(74, 240, 196, 0.25) 20%,
+        rgba(74, 240, 196, 0.25) 80%,
+        transparent
+      );
+    }
+
+    /* Three-month grid — right */
+    #months {
+      flex: 1;
+      display: flex;
+    }
+
+    /* Month column */
+    .month-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 38px 40px;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .month-col:last-child { border-right: none; }
+
+    /* Month title */
+    .month-header {
+      flex-shrink: 0;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .month-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .month-year {
+      font-size: 0.82rem;
+      font-weight: 400;
+      margin-left: 10px;
+    }
+
+    /* Day-of-week label row */
+    .day-labels {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 4px;
+    }
+    .day-label {
+      text-align: center;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 0 8px;
+    }
+
+    /* Date grid — always 6 rows × 7 cols */
+    .date-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+    }
+    .date-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .date-num {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Current month — full brightness */
+
+    /* Whisper of cyan background so the column reads as "selected" */
+    .month-col.current {
+      background: rgba(74, 240, 196, 0.018);
+    }
+
+    /* Month title: name in cyan, year muted */
+    .month-col.current .month-name { color: #4af0c4; }
+    .month-col.current .month-year { color: rgba(255, 255, 255, 0.35); }
+
+    /* Thin cyan rule under the title */
+    .month-col.current .month-header {
+      border-bottom: 1px solid rgba(74, 240, 196, 0.14);
+      padding-bottom: 16px;
+    }
+
+    /* Weekday labels — muted white */
+    .month-col.current .day-label { color: rgba(255, 255, 255, 0.3); }
+
+    /* Thin cyan rule under the day labels */
+    .month-col.current .day-labels {
+      border-bottom: 1px solid rgba(74, 240, 196, 0.08);
+      margin-bottom: 4px;
+    }
+
+    /* Weekday date numbers */
+    .month-col.current .date-num { color: rgba(255, 255, 255, 0.85); }
+
+    /* Weekend labels — amber */
+    .month-col.current .day-label.weekend { color: rgba(240, 168, 74, 0.55); }
+
+    /* Weekend date numbers — amber instead of just dimmed white */
+    .month-col.current .date-cell.weekend .date-num { color: rgba(240, 168, 74, 0.72); }
+
+    /* Today marker — cyan fill + ring halo + glow */
+    .month-col.current .date-cell.today .date-num {
+      background: #4af0c4;
+      color: #080b14;
+      font-weight: 700;
+      box-shadow:
+        0 0 0 3px rgba(74, 240, 196, 0.22),   /* inner ring */
+        0 0 40px rgba(74, 240, 196, 0.45);     /* outer glow */
+    }
+
+    /* Prev / next months — dimmed */
+    .month-col.dim .month-name { color: rgba(255, 255, 255, 0.2); }
+    .month-col.dim .month-year { color: rgba(255, 255, 255, 0.13); }
+    .month-col.dim .day-label  { color: rgba(255, 255, 255, 0.1); }
+    .month-col.dim .date-num   { color: rgba(255, 255, 255, 0.16); }
+    /* Keep amber in dim months but very faint — just enough to echo the pattern */
+    .month-col.dim .date-cell.weekend .date-num { color: rgba(240, 168, 74, 0.14); }
+  </style>
+</head>
+<body>
+
+  <!-- Hero date display -->
+  <div id="hero">
+    <div id="hero-day">—</div>
+    <div id="hero-date">—</div>
+    <div id="hero-month">—</div>
+    <div id="hero-week">—</div>
+  </div>
+
+  <!-- Vertical separator -->
+  <div id="divider"></div>
+
+  <!-- Three-month calendar -->
+  <div id="months">
+    <div class="month-col dim"     id="month-prev"></div>
+    <div class="month-col current" id="month-curr"></div>
+    <div class="month-col dim"     id="month-next"></div>
+  </div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    // Constants
+    const MONTH_NAMES = [
+      'January', 'February', 'March',     'April',   'May',      'June',
+      'July',    'August',   'September', 'October', 'November', 'December',
+    ];
+    const DAY_NAMES = [
+      'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+    ];
+
+    // State
+    let settings = {};
+
+    // ISO week number (week 1 = first week containing Thursday)
+    function isoWeek(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const day = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - day);
+      const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - jan1) / 86400000) + 1) / 7);
+    }
+
+    // Build HTML for one calendar month
+    //
+    // Always renders exactly 42 cells (6 rows × 7 cols) so the
+    // date-grid fills the available height evenly via grid-template-rows.
+    //
+    function buildMonthHtml(year, month, todayY, todayM, todayD, weekStartSun, dimWeekends) {
+      const daysInMonth  = new Date(year, month + 1, 0).getDate();
+      const firstWeekday = new Date(year, month, 1).getDay(); // 0 = Sun
+
+      // Blank cells before day 1
+      const offset = weekStartSun
+        ? firstWeekday
+        : (firstWeekday === 0 ? 6 : firstWeekday - 1);
+
+      // Grid column indices that are Sat / Sun
+      // Sun-start: col 0 = Sun, col 6 = Sat → weekends at 0 and 6
+      // Mon-start: col 5 = Sat, col 6 = Sun → weekends at 5 and 6
+      const weekendCols = weekStartSun ? new Set([0, 6]) : new Set([5, 6]);
+
+      const dayLabels = weekStartSun
+        ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+        : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+      // Build flat cell array padded to exactly 42
+      const cells = [];
+      for (let i = 0; i < offset; i++)        cells.push(null);
+      for (let d = 1; d <= daysInMonth; d++)  cells.push(d);
+      while (cells.length < 42)               cells.push(null);
+
+      // Month title
+      let html = `
+        <div class="month-header">
+          <span class="month-name">${MONTH_NAMES[month]}</span
+          ><span class="month-year">${year}</span>
+        </div>`;
+
+      // Day-of-week labels
+      html += '<div class="day-labels">';
+      dayLabels.forEach((label, i) => {
+        const wknd = dimWeekends && weekendCols.has(i) ? ' weekend' : '';
+        html += `<div class="day-label${wknd}">${label}</div>`;
+      });
+      html += '</div>';
+
+      // 42 date cells
+      html += '<div class="date-grid">';
+      for (let i = 0; i < 42; i++) {
+        const d   = cells[i];
+        const col = i % 7;
+
+        const isToday   = d !== null
+          && year === todayY && month === todayM && d === todayD;
+        const isWeekend = dimWeekends && weekendCols.has(col);
+
+        const cls = ['date-cell', isToday && 'today', isWeekend && 'weekend']
+          .filter(Boolean).join(' ');
+
+        html += `<div class="${cls}"><div class="date-num">${d ?? ''}</div></div>`;
+      }
+      html += '</div>';
+
+      return html;
+    }
+
+    // Main render
+    function render() {
+      const weekStartSun  = (settings.weekStart ?? 'Monday') === 'Sunday';
+      const dimWeekends   = settings.highlightWeekends !== false;
+
+      const now = new Date();
+      const ty  = now.getFullYear();
+      const tm  = now.getMonth();
+      const td  = now.getDate();
+
+      // Hero panel
+      document.getElementById('hero-day').textContent   = DAY_NAMES[now.getDay()];
+      document.getElementById('hero-date').textContent  = td;
+      document.getElementById('hero-month').textContent = `${MONTH_NAMES[tm]} ${ty}`;
+      document.getElementById('hero-week').textContent  = `Week ${isoWeek(now)}`;
+
+      // Month grids
+      const prev = new Date(ty, tm - 1, 1);
+      const next = new Date(ty, tm + 1, 1);
+
+      document.getElementById('month-prev').innerHTML = buildMonthHtml(
+        prev.getFullYear(), prev.getMonth(), ty, tm, td, weekStartSun, dimWeekends
+      );
+      document.getElementById('month-curr').innerHTML = buildMonthHtml(
+        ty, tm, ty, tm, td, weekStartSun, dimWeekends
+      );
+      document.getElementById('month-next').innerHTML = buildMonthHtml(
+        next.getFullYear(), next.getMonth(), ty, tm, td, weekStartSun, dimWeekends
+      );
+    }
+
+    // Bootstrap
+    settings = await xemd.settings.get();
+    render();
+    xemd.ready();
+
+    // Refresh every minute — zero API calls, trivially cheap.
+    // Ensures today's marker updates correctly at midnight.
+    xemd.onRefresh(() => render());
+    xemd.onSettingsChange(s => { settings = s; render(); });
+  </script>
+</body>
+</html>

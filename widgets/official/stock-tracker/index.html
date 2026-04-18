@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Tracker</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #050a05;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.07);
+      --border: rgba(255, 255, 255, 0.08);
+      --green: #00d17a;
+      --green-dim: rgba(0, 209, 122, 0.15);
+      --red: #ff4d6d;
+      --red-dim: rgba(255, 77, 109, 0.15);
+      --text-primary: #f0f0f0;
+      --text-muted: rgba(240, 240, 240, 0.45);
+      --text-dim: rgba(240, 240, 240, 0.25);
+      --header-h: 72px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Header */
+    #header {
+      flex: 0 0 var(--header-h);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5, 10, 5, 0.9);
+      backdrop-filter: blur(8px);
+    }
+
+    #header-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    #header-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-primary);
+    }
+
+    #live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 99px;
+      background: var(--green-dim);
+      border: 1px solid rgba(0, 209, 122, 0.3);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--green);
+      text-transform: uppercase;
+    }
+
+    #live-badge::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    #last-update {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Cards Container */
+    #cards {
+      flex: 1 1 0;
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Stock Card */
+    .card {
+      flex: 1 1 0;
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: background 0.2s;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      background: var(--surface-hover);
+    }
+
+    /* Card header row */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-symbol-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .card-symbol {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .card-name {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    /* Price block */
+    .card-price-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .card-price {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .card-change {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .card-change.positive {
+      background: var(--green-dim);
+      color: var(--green);
+    }
+
+    .card-change.negative {
+      background: var(--red-dim);
+      color: var(--red);
+    }
+
+    .card-change.neutral {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+
+    /* Stats grid */
+    .card-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .stat-label {
+      font-size: 0.58rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .stat-value {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Day range bar */
+    .card-range {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: auto;
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .range-label {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+    }
+
+    .range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .range-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, rgba(0, 209, 122, 0.4), var(--green));
+      transition: width 0.6s ease;
+      min-width: 4px;
+    }
+
+    .range-cursor {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(0, 209, 122, 0.7);
+      transition: left 0.6s ease;
+    }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .card-skeleton {
+      flex: 1 1 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .sk-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sk-block {
+      border-radius: 6px;
+    }
+
+    /* No-key state */
+    #no-key {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px;
+    }
+
+    #no-key-icon {
+      font-size: 4rem;
+      line-height: 1;
+    }
+
+    #no-key-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    #no-key-body {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    #no-key-link {
+      font-size: 0.85rem;
+      color: var(--green);
+      opacity: 0.8;
+    }
+
+    /* Error card */
+    .card-error .card-price {
+      font-size: 1.5rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <span id="header-icon">📈</span>
+      <span id="header-title">Stock Tracker</span>
+      <span id="live-badge">Live</span>
+      <span id="last-update"></span>
+    </header>
+    <div id="cards"></div>
+  </div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    // Sanitization
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    }
+
+    // Helpers
+
+    function formatPrice(value) {
+      if (value == null || isNaN(value)) return '—';
+      if (value < 1) {
+        return '$' + value.toFixed(4);
+      }
+      return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatChange(d, dp) {
+      if (d == null || isNaN(d)) return '—';
+      const sign = d >= 0 ? '+' : '';
+      const dFmt = sign + '$' + Math.abs(d).toFixed(2);
+      const dpFmt = sign + dp.toFixed(2) + '%';
+      return `${dFmt} (${dpFmt})`;
+    }
+
+    function clamp(val, min, max) {
+      return Math.min(Math.max(val, min), max);
+    }
+
+    function rangePercent(current, low, high) {
+      if (high === low) return 50;
+      return clamp(((current - low) / (high - low)) * 100, 2, 98);
+    }
+
+    function updateTimestamp() {
+      const el = document.getElementById('last-update');
+      if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Skeleton
+
+    function renderSkeletons(count) {
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'card-skeleton';
+        el.innerHTML = `
+          <div class="sk-row">
+            <div class="sk-block skeleton" style="width:80px;height:36px;"></div>
+            <div style="flex:1"></div>
+            <div class="sk-block skeleton" style="width:110px;height:36px;"></div>
+          </div>
+          <div class="sk-row">
+            <div class="sk-block skeleton" style="width:130px;height:16px;"></div>
+            <div style="flex:1"></div>
+            <div class="sk-block skeleton" style="width:90px;height:20px;border-radius:99px;"></div>
+          </div>
+          <div class="sk-row" style="margin-top:auto;">
+            <div class="sk-block skeleton" style="flex:1;height:42px;"></div>
+            <div class="sk-block skeleton" style="flex:1;height:42px;margin-left:5px;"></div>
+            <div class="sk-block skeleton" style="flex:1;height:42px;margin-left:5px;"></div>
+            <div class="sk-block skeleton" style="flex:1;height:42px;margin-left:5px;"></div>
+          </div>
+          <div class="sk-block skeleton" style="height:4px;border-radius:2px;margin-top:8px;"></div>
+        `;
+        container.appendChild(el);
+      }
+    }
+
+    // No-key state
+
+    function renderNoKey() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <header id="header">
+          <span id="header-icon">📈</span>
+          <span id="header-title">Stock Tracker</span>
+        </header>
+        <div id="no-key">
+          <div id="no-key-icon">📈</div>
+          <div id="no-key-title">Stock Tracker</div>
+          <div id="no-key-body">
+            Add your Finnhub API key in the<br>
+            <strong>Admin Panel → Stock Tracker → Secrets</strong><br>
+            to get started.
+          </div>
+          <div id="no-key-link">Get a free key at finnhub.io</div>
+        </div>
+      `;
+    }
+
+    // Card renderer
+
+    function renderCard(data) {
+      const { symbol, quote, profile, error } = data;
+
+      const card = document.createElement('div');
+      card.className = 'card' + (error && !quote ? ' card-error' : '');
+
+      const q = quote || {};
+      const p = profile || {};
+
+      const price = q.c;
+      const change = q.d;
+      const changePct = q.dp;
+      const open = q.o;
+      const high = q.h;
+      const low = q.l;
+      const prevClose = q.pc;
+
+      const changeClass = change == null ? 'neutral' : change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+      const changeText = change != null && changePct != null ? formatChange(change, changePct) : '—';
+      const companyName = p.name || symbol;
+
+      const pct = (price != null && low != null && high != null)
+        ? rangePercent(price, low, high)
+        : 50;
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="card-symbol-block">
+            <div class="card-symbol">${escapeHtml(symbol)}</div>
+            <div class="card-name" title="${escapeHtml(companyName)}">${escapeHtml(companyName)}</div>
+          </div>
+          <div class="card-price-block">
+            <div class="card-price">${price != null ? formatPrice(price) : '—'}</div>
+            <div class="card-change ${changeClass}">${changeText}</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat-pill">
+            <span class="stat-label">Open</span>
+            <span class="stat-value">${open != null ? formatPrice(open) : '—'}</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">High</span>
+            <span class="stat-value">${high != null ? formatPrice(high) : '—'}</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Low</span>
+            <span class="stat-value">${low != null ? formatPrice(low) : '—'}</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Prev Close</span>
+            <span class="stat-value">${prevClose != null ? formatPrice(prevClose) : '—'}</span>
+          </div>
+        </div>
+        <div class="card-range">
+          <div class="range-labels">
+            <span class="range-label">${low != null ? formatPrice(low) : '—'}</span>
+            <span class="range-label" style="color: var(--text-muted); font-size:0.6rem;">Day Range</span>
+            <span class="range-label">${high != null ? formatPrice(high) : '—'}</span>
+          </div>
+          <div class="range-track">
+            <div class="range-fill" style="width:${pct}%"></div>
+            <div class="range-cursor" style="left:${pct}%"></div>
+          </div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // Fetch logic
+
+    async function fetchSymbol(symbol) {
+      const quoteUrl = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token={{secret:FINNHUB_KEY}}`;
+      const profileUrl = `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(symbol)}&token={{secret:FINNHUB_KEY}}`;
+
+      const [quoteRes, profileRes] = await Promise.allSettled([
+        xemd.proxy.fetch(quoteUrl),
+        xemd.proxy.fetch(profileUrl),
+      ]);
+
+      let quote = null;
+      let profile = null;
+      let error = null;
+
+      if (quoteRes.status === 'fulfilled' && quoteRes.value.ok) {
+        try {
+          quote = await quoteRes.value.json();
+          // Finnhub returns all zeros when symbol is unknown
+          if (quote && quote.c === 0 && quote.o === 0 && quote.h === 0) {
+            quote = null;
+            error = 'No data';
+          }
+        } catch (e) {
+          error = 'Parse error';
+        }
+      } else {
+        error = quoteRes.reason?.message || 'Fetch error';
+      }
+
+      if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+        try {
+          profile = await profileRes.value.json();
+          if (!profile || !profile.name) profile = null;
+        } catch (e) {
+          // profile failure is non-fatal
+        }
+      }
+
+      return { symbol, quote, profile, error };
+    }
+
+    async function fetchAll(symbols) {
+      const results = await Promise.allSettled(
+        symbols.map(sym => fetchSymbol(sym))
+      );
+
+      return results.map((r, i) => {
+        if (r.status === 'fulfilled') return r.value;
+        return { symbol: symbols[i], quote: null, profile: null, error: r.reason?.message || 'Error' };
+      });
+    }
+
+    // Render pass
+
+    function renderCards(data) {
+      const container = document.getElementById('cards');
+      if (!container) return;
+      container.innerHTML = '';
+      for (const item of data) {
+        container.appendChild(renderCard(item));
+      }
+      updateTimestamp();
+    }
+
+    // Main
+
+    let currentSymbols = [];
+    let hasApiKey = false;
+
+    async function loadAndRender(symbols) {
+      renderSkeletons(symbols.length);
+      const data = await fetchAll(symbols);
+      renderCards(data);
+    }
+
+    async function init() {
+      // Check if API key exists (value stays server-side via {{secret:...}} in URLs)
+      const apiKey = await xemd.secrets.get('FINNHUB_KEY');
+
+      if (!apiKey) {
+        renderNoKey();
+        xemd.ready();
+        return;
+      }
+
+      hasApiKey = true;
+
+      // Get settings
+      const settings = await xemd.settings.get();
+      const rawSymbols = (settings.symbols || 'AAPL,TSLA,NVDA,MSFT,AMZN');
+      currentSymbols = rawSymbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+      // Initial fetch
+      await loadAndRender(currentSymbols);
+      xemd.ready();
+    }
+
+    // Refresh handler
+    xemd.onRefresh(async () => {
+      if (hasApiKey && currentSymbols.length > 0) {
+        await loadAndRender(currentSymbols);
+      }
+    });
+
+    // Settings change handler
+    xemd.onSettingsChange(async (settings) => {
+      const apiKey = await xemd.secrets.get('FINNHUB_KEY');
+      if (!apiKey) {
+        renderNoKey();
+        return;
+      }
+      hasApiKey = true;
+      const rawSymbols = (settings.symbols || 'AAPL,TSLA,NVDA,MSFT,AMZN');
+      currentSymbols = rawSymbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      await loadAndRender(currentSymbols);
+    });
+
+    init();
+  </script>
+</body>
+</html>

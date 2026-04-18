@@ -1,0 +1,477 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent-start: #6366f1;
+      --accent-mid:   #8b5cf6;
+      --accent-end:   #ec4899;
+      --done-color:   #10b981;
+    }
+
+    body {
+      background: #080b14;
+      background-image:
+        radial-gradient(ellipse at 15% 50%, rgba(99,102,241,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 50%, rgba(236,72,153,0.06) 0%, transparent 55%);
+      font-family: 'Inter', system-ui, sans-serif;
+      width: 2560px;
+      height: 720px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 80px;
+      user-select: none;
+      gap: 0;
+    }
+
+    /* Title */
+    #title {
+      font-size: 1.6rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+      margin-bottom: 36px;
+      text-align: center;
+    }
+
+    /* Numbers row */
+    #numbers-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 80px;
+      margin-bottom: 44px;
+      width: 100%;
+    }
+
+    .number-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .number-value {
+      font-size: 14rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-mid), var(--accent-end));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .number-value.is-done {
+      background: linear-gradient(135deg, var(--done-color), #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .number-label {
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Divider between numbers */
+    .number-divider {
+      width: 1px;
+      height: 160px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1) 30%, rgba(255,255,255,0.1) 70%, transparent);
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    /* Progress section */
+    #progress-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Dot grid track */
+    #dot-track {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow: hidden;
+    }
+
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      transition: background 0.5s;
+    }
+
+    .dot-filled {
+      background: linear-gradient(135deg, var(--accent-start), var(--accent-mid));
+    }
+
+    .dot-empty {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Smooth bar (shown when dot count would be impractical) */
+    #smooth-bar-wrap {
+      width: 100%;
+      height: 10px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    #smooth-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent-start), var(--accent-mid), var(--accent-end));
+      transition: width 0.6s ease;
+      position: relative;
+    }
+
+    #smooth-bar-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.25));
+      border-radius: 0 999px 999px 0;
+    }
+
+    /* Progress meta row */
+    #progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .meta-date {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.22);
+      letter-spacing: 0.04em;
+    }
+
+    .meta-pct {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      background: linear-gradient(to right, var(--accent-mid), var(--accent-end));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Not-configured state */
+    #setup-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .setup-icon { font-size: 3rem; opacity: 0.4; }
+
+    .setup-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .setup-sub {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.2);
+      line-height: 1.7;
+    }
+
+    /* Done / not started states */
+    .state-label {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: center;
+      color: var(--done-color);
+    }
+
+    /* Glass card (background image mode) */
+    #widget-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    body.has-bg {
+      background-size: cover;
+      background-position: center;
+      background-image: none; /* overridden by JS */
+      padding: 50px 80px;
+    }
+
+    body.has-bg #widget-wrap {
+      background: rgba(8, 8, 16, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 32px;
+      padding: 48px 80px;
+    }
+  </style>
+</head>
+<body>
+  <div id="widget-wrap"></div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    const wrap = document.getElementById('widget-wrap');
+
+    // Date helpers
+
+    // Parses a YYYY-MM-DD string as a local date. Returns null if empty/invalid.
+    function parseLocalDate(str) {
+      if (!str || typeof str !== 'string') return null;
+      const [y, m, d] = str.trim().split('-').map(Number);
+      if (!y || !m || !d) return null;
+      const date = new Date(y, m - 1, d);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+
+    function daysBetween(a, b) {
+      return Math.floor((b - a) / 86400000);
+    }
+
+    function fmtDate(date) {
+      if (!date || isNaN(date.getTime())) return '—';
+      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    function showError(title, lines) {
+      wrap.innerHTML = '';
+      const el = document.createElement('div');
+      el.id = 'setup-state';
+      el.innerHTML = `
+        <div class="setup-icon">⚠️</div>
+        <div class="setup-title">${title}</div>
+        <div class="setup-sub">${lines.join('<br>')}</div>`;
+      wrap.appendChild(el);
+      xemd.ready();
+    }
+
+    // Dot grid renderer
+    function renderDots(container, total, filled) {
+      // Cap at 200 dots for visual clarity; each dot = proportional days
+      const DOT_MAX = 200;
+      const count   = Math.min(total, DOT_MAX);
+      const filledCount = Math.round((filled / total) * count);
+
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot ' + (i < filledCount ? 'dot-filled' : 'dot-empty');
+        container.appendChild(dot);
+      }
+    }
+
+    // Render
+    async function render() {
+      const s = await xemd.settings.get();
+
+      const title      = s.title      || "It's Almost Time...";
+      const showPassed = s.showPassed !== false;
+      const showLeft   = s.showLeft   !== false;
+      const startStr   = (s.startDate || '').trim();
+      const endStr     = (s.endDate   || '').trim();
+      const bgUrl      = (s.backgroundImageUrl || '').trim();
+
+      // Background image + glass card mode
+      if (bgUrl) {
+        document.body.style.backgroundImage =
+          `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),url(${JSON.stringify(bgUrl)})`;
+        document.body.classList.add('has-bg');
+      } else {
+        document.body.style.backgroundImage = '';
+        document.body.classList.remove('has-bg');
+      }
+
+      wrap.innerHTML = '';
+
+      // Not configured
+      if (!startStr || !endStr) {
+        const el = document.createElement('div');
+        el.id = 'setup-state';
+        el.innerHTML = `
+          <div class="setup-icon">⏳</div>
+          <div class="setup-title">${title}</div>
+          <div class="setup-sub">
+            Open the Admin Panel → It's Almost Time... and set a<br>
+            <strong style="color:rgba(255,255,255,0.35)">Start Date</strong> and
+            <strong style="color:rgba(255,255,255,0.35)">End Date</strong> to begin the countdown.
+          </div>`;
+        wrap.appendChild(el);
+        xemd.ready();
+        return;
+      }
+
+      const startDate = parseLocalDate(startStr);
+      const endDate   = parseLocalDate(endStr);
+
+      if (!startDate) {
+        showError('Invalid Start Date', [
+          `"${startStr}" is not a valid date.`,
+          'Use the format <strong style="color:rgba(255,255,255,0.5)">YYYY-MM-DD</strong> — for example: <strong style="color:rgba(255,255,255,0.5)">2025-06-30</strong>',
+        ]);
+        return;
+      }
+      if (!endDate) {
+        showError('Invalid End Date', [
+          `"${endStr}" is not a valid date.`,
+          'Use the format <strong style="color:rgba(255,255,255,0.5)">YYYY-MM-DD</strong> — for example: <strong style="color:rgba(255,255,255,0.5)">2026-12-31</strong>',
+        ]);
+        return;
+      }
+      if (endDate <= startDate) {
+        showError('End Date Must Be After Start Date', [
+          `Start: ${fmtDate(startDate)}`,
+          `End: ${fmtDate(endDate)}`,
+        ]);
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const totalDays   = daysBetween(startDate, endDate);
+      const daysPassed  = Math.max(0, Math.min(totalDays, daysBetween(startDate, today)));
+      const daysLeft    = Math.max(0, daysBetween(today, endDate));
+      const pct         = totalDays > 0 ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 100;
+      const isDone      = today >= endDate;
+      const notStarted  = today < startDate;
+
+      // Build layout
+
+      // Title
+      const titleEl = document.createElement('div');
+      titleEl.id = 'title';
+      titleEl.textContent = title;
+      wrap.appendChild(titleEl);
+
+      // Done / not started banner replaces numbers
+      if (isDone) {
+        const done = document.createElement('div');
+        done.className = 'state-label';
+        done.style.marginBottom = '44px';
+        done.textContent = '🎉 It\'s time!';
+        wrap.appendChild(done);
+      } else if (notStarted) {
+        const ns = document.createElement('div');
+        ns.className = 'state-label';
+        ns.style.color = 'rgba(255,255,255,0.3)';
+        ns.style.marginBottom = '44px';
+        const daysUntilStart = daysBetween(today, startDate);
+        ns.textContent = `Starts in ${daysUntilStart} day${daysUntilStart !== 1 ? 's' : ''}`;
+        wrap.appendChild(ns);
+      } else {
+        // Numbers row
+        const row = document.createElement('div');
+        row.id = 'numbers-row';
+
+        if (showPassed) {
+          const block = document.createElement('div');
+          block.className = 'number-block';
+          block.innerHTML = `
+            <div class="number-value">${daysPassed}</div>
+            <div class="number-label">Days Passed</div>`;
+          row.appendChild(block);
+        }
+
+        if (showPassed && showLeft) {
+          const div = document.createElement('div');
+          div.className = 'number-divider';
+          row.appendChild(div);
+        }
+
+        if (showLeft) {
+          const block = document.createElement('div');
+          block.className = 'number-block';
+          block.innerHTML = `
+            <div class="number-value${isDone ? ' is-done' : ''}">${daysLeft}</div>
+            <div class="number-label">Days Left</div>`;
+          row.appendChild(block);
+        }
+
+        // If both are hidden, show just the percentage
+        if (!showPassed && !showLeft) {
+          const pctBlock = document.createElement('div');
+          pctBlock.className = 'number-block';
+          pctBlock.innerHTML = `
+            <div class="number-value">${pct}</div>
+            <div class="number-label">% Complete</div>`;
+          row.appendChild(pctBlock);
+        }
+
+        wrap.appendChild(row);
+      }
+
+      // Progress section
+      const progSection = document.createElement('div');
+      progSection.id = 'progress-section';
+
+      // Dot grid for ≤200 total days, smooth bar for larger ranges
+      if (totalDays <= 200 && totalDays > 0) {
+        const dotTrack = document.createElement('div');
+        dotTrack.id = 'dot-track';
+        renderDots(dotTrack, totalDays, daysPassed);
+        progSection.appendChild(dotTrack);
+      } else if (totalDays > 0) {
+        const barWrap = document.createElement('div');
+        barWrap.id = 'smooth-bar-wrap';
+        barWrap.innerHTML = `<div id="smooth-bar-fill" style="width:${pct}%"></div>`;
+        progSection.appendChild(barWrap);
+      }
+
+      // Meta row — start date · pct complete · end date
+      const meta = document.createElement('div');
+      meta.id = 'progress-meta';
+      meta.innerHTML = `
+        <div class="meta-date">${fmtDate(startDate)}</div>
+        <div class="meta-pct">${pct}% complete · ${totalDays} days total</div>
+        <div class="meta-date">${fmtDate(endDate)}</div>`;
+      progSection.appendChild(meta);
+
+      wrap.appendChild(progSection);
+
+      xemd.ready();
+    }
+
+    xemd.onRefresh(render);
+    xemd.onSettingsChange(() => render());
+    render();
+  </script>
+</body>
+</html>

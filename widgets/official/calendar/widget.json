@@ -1,0 +1,26 @@
+{
+  "id": "calendar",
+  "name": "Calendar",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Three-month calendar view — previous, current, and next. Today's date is highlighted with a cyan marker. Configurable week start and optional weekend styling.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 60,
+  "permissions": { "proxy": [], "secrets": [] },
+  "settings": [
+    {
+      "key": "weekStart",
+      "label": "Week starts on",
+      "type": "enum",
+      "options": ["Monday", "Sunday"],
+      "default": "Monday"
+    },
+    {
+      "key": "highlightWeekends",
+      "label": "Dim weekends",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

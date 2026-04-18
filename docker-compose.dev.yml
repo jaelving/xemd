@@ -1,0 +1,28 @@
+services:
+  xemd-host:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @xemd/host dev"
+    ports:
+      - "${XEMD_HOST_PORT:-6600}:6600"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - xemd-api
+
+  xemd-api:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @xemd/api dev"
+    ports:
+      - "${XEMD_API_PORT:-3001}:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./data:/data
+      - ./widgets:/widgets
+    environment:
+      - XEMD_MASTER_KEY=${XEMD_MASTER_KEY:-}
+      - WIDGETS_DIR=/widgets
+      - PORT=3001

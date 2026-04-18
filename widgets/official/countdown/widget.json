@@ -1,0 +1,19 @@
+{
+  "id": "countdown",
+  "name": "It's Almost Time...",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "A countdown (and count-up) timer between two dates with a visual progress bar. Configurable title, start date, and end date.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 3600,
+  "permissions": { "proxy": [], "secrets": [] },
+  "settings": [
+    { "key": "title",       "label": "Title",              "type": "string",  "default": "It's Almost Time..." },
+    { "key": "startDate",   "label": "Start Date", "type": "date", "default": "" },
+    { "key": "endDate",     "label": "End Date",   "type": "date", "default": "" },
+    { "key": "showPassed",         "label": "Show days passed",        "type": "boolean", "default": true },
+    { "key": "showLeft",           "label": "Show days remaining",     "type": "boolean", "default": true },
+    { "key": "backgroundImageUrl", "label": "Background image URL",    "type": "string",  "default": ""   }
+  ]
+}

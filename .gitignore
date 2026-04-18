@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Turbo cache
+.turbo/
+
+# Environment — never commit real secrets
+.env
+.env.local
+
+# Database and runtime data
+data/
+
+# macOS filesystem metadata
+.DS_Store
+**/.DS_Store
+
+# IDE / editor settings
+.claude/
+
+# Internal development notes — not for public release
+docs/BUILD_REFERENCE.md
+docs/LESSONS_LEARNED.md
+
+# Community widgets — users drop these in locally; only the placeholder is committed
+widgets/community/*
+!widgets/community/.gitkeep

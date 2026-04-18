@@ -1,0 +1,503 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #050505;
+      color: #f0f0f0;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      width: 2560px;
+      height: 720px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      user-select: none;
+    }
+
+    /* Clock panel */
+    #clock-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #time-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      line-height: 1;
+      position: relative;
+    }
+
+    #time {
+      font-size: 18rem;
+      font-weight: 200;
+      letter-spacing: -0.04em;
+      color: #f0f0f0;
+    }
+
+    #seconds {
+      font-size: 7rem;
+      font-weight: 200;
+      color: #444;
+      align-self: flex-end;
+      padding-bottom: 0.8rem;
+      margin-left: 0.4rem;
+    }
+
+    #ampm {
+      font-size: 2.8rem;
+      font-weight: 300;
+      color: #555;
+      align-self: flex-start;
+      padding-top: 1.4rem;
+      margin-left: 0.6rem;
+    }
+
+    .colon {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.15; }
+    }
+
+    #date {
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: #3a3a3a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.8rem;
+    }
+
+    /* Glass card (background image mode) */
+    #clock-glass {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    body.has-bg {
+      background-size: cover;
+      background-position: center;
+    }
+
+    body.has-bg #clock-glass {
+      background: rgba(8, 8, 12, 0.52);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 28px;
+      padding: 2.5rem 5rem 3rem;
+    }
+
+    body.has-bg #moon-panel {
+      background: rgba(8, 8, 12, 0.52);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-left: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    /* Divider replaced by moon panel's left border when bg is active */
+    body.has-bg #panel-divider { display: none; }
+
+    /* Full-width mode (moon hidden) */
+    body.moon-hidden #panel-divider,
+    body.moon-hidden #moon-panel { display: none; }
+
+    body.moon-hidden #time    { font-size: 26rem; }
+    body.moon-hidden #seconds { font-size: 10rem; padding-bottom: 1rem; margin-left: 0.5rem; }
+    body.moon-hidden #ampm    { font-size: 3.5rem; padding-top: 2rem; margin-left: 0.75rem; }
+    body.moon-hidden #date    { font-size: 2.5rem; margin-top: 1rem; }
+
+    /* Divider */
+    #panel-divider {
+      width: 1px;
+      align-self: stretch;
+      flex-shrink: 0;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(255,255,255,0.07) 18%,
+        rgba(255,255,255,0.07) 82%,
+        transparent 100%
+      );
+    }
+
+    /* Moon panel */
+    #moon-panel {
+      width: 780px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 2rem;
+      position: relative;
+    }
+
+    /* Atmospheric glow behind the moon */
+    #moon-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center,
+        rgba(255,255,255,0.03) 0%,
+        transparent 68%
+      );
+      pointer-events: none;
+    }
+
+    .moon-section-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+      margin-bottom: -0.2rem;
+    }
+
+    #moon-svg-wrap svg {
+      width: 270px;
+      height: 270px;
+      display: block;
+      filter:
+        drop-shadow(0 0 16px rgba(255,255,255,0.11))
+        drop-shadow(0 0 55px rgba(255,255,255,0.05));
+    }
+
+    .moon-outline {
+      stroke: rgba(255,255,255,0.16);
+      stroke-width: 1;
+      fill: transparent;
+    }
+
+    .moon-fill {
+      fill: #e8e8e8;
+    }
+
+    #moon-phase-name {
+      font-size: 1.9rem;
+      font-weight: 200;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+    }
+
+    #moon-illum {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.1em;
+    }
+
+    #moon-age {
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.16);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT: Clock -->
+  <div id="clock-panel">
+    <div id="clock-glass">
+      <div id="time-wrapper">
+        <div id="time">--<span class="colon">:</span>--</div>
+        <div id="seconds" style="display:none">--</div>
+        <div id="ampm" style="display:none"></div>
+      </div>
+      <div id="date" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div id="panel-divider"></div>
+
+  <!-- RIGHT: Moon phase -->
+  <div id="moon-panel">
+    <div class="moon-section-label">Moon Phase</div>
+    <div id="moon-svg-wrap">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <circle class="moon-outline" cx="32" cy="32" r="30"/>
+        <path class="moon-fill" id="moon-path" d=""/>
+      </svg>
+    </div>
+    <div id="moon-phase-name">—</div>
+    <div id="moon-illum">—</div>
+    <div id="moon-age">—</div>
+  </div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    // Timezone map
+    const TZ_MAP = {
+      "Pago Pago, American Samoa":          "Pacific/Pago_Pago",
+      "Honolulu, United States":            "Pacific/Honolulu",
+      "Anchorage, United States":           "America/Anchorage",
+      "Vancouver, Canada":                  "America/Vancouver",
+      "Denver, United States":              "America/Denver",
+      "Mexico City, Mexico":                "America/Mexico_City",
+      "Washington DC, United States":       "America/New_York",
+      "Ottawa, Canada":                     "America/Toronto",
+      "Lima, Peru":                         "America/Lima",
+      "Bogotá, Colombia":                   "America/Bogota",
+      "Havana, Cuba":                       "America/Havana",
+      "Caracas, Venezuela":                 "America/Caracas",
+      "La Paz, Bolivia":                    "America/La_Paz",
+      "Santiago, Chile":                    "America/Santiago",
+      "Brasília, Brazil":                   "America/Sao_Paulo",
+      "Buenos Aires, Argentina":            "America/Argentina/Buenos_Aires",
+      "Montevideo, Uruguay":                "America/Montevideo",
+      "Nuuk, Greenland":                    "America/Nuuk",
+      "Praia, Cape Verde":                  "Atlantic/Cape_Verde",
+      "Reykjavik, Iceland":                 "Atlantic/Reykjavik",
+      "London, United Kingdom":             "Europe/London",
+      "Lisbon, Portugal":                   "Europe/Lisbon",
+      "Dublin, Ireland":                    "Europe/Dublin",
+      "Accra, Ghana":                       "Africa/Accra",
+      "Dakar, Senegal":                     "Africa/Dakar",
+      "Lagos, Nigeria":                     "Africa/Lagos",
+      "Paris, France":                      "Europe/Paris",
+      "Berlin, Germany":                    "Europe/Berlin",
+      "Rome, Italy":                        "Europe/Rome",
+      "Madrid, Spain":                      "Europe/Madrid",
+      "Amsterdam, Netherlands":             "Europe/Amsterdam",
+      "Brussels, Belgium":                  "Europe/Brussels",
+      "Vienna, Austria":                    "Europe/Vienna",
+      "Warsaw, Poland":                     "Europe/Warsaw",
+      "Prague, Czech Republic":             "Europe/Prague",
+      "Stockholm, Sweden":                  "Europe/Stockholm",
+      "Oslo, Norway":                       "Europe/Oslo",
+      "Copenhagen, Denmark":                "Europe/Copenhagen",
+      "Cairo, Egypt":                       "Africa/Cairo",
+      "Athens, Greece":                     "Europe/Athens",
+      "Bucharest, Romania":                 "Europe/Bucharest",
+      "Helsinki, Finland":                  "Europe/Helsinki",
+      "Kyiv, Ukraine":                      "Europe/Kyiv",
+      "Johannesburg, South Africa":         "Africa/Johannesburg",
+      "Harare, Zimbabwe":                   "Africa/Harare",
+      "Nairobi, Kenya":                     "Africa/Nairobi",
+      "Kampala, Uganda":                    "Africa/Kampala",
+      "Kigali, Rwanda":                     "Africa/Kigali",
+      "Amman, Jordan":                      "Asia/Amman",
+      "Beirut, Lebanon":                    "Asia/Beirut",
+      "Jerusalem, Israel":                  "Asia/Jerusalem",
+      "Nicosia, Cyprus":                    "Asia/Nicosia",
+      "Sofia, Bulgaria":                    "Europe/Sofia",
+      "Budapest, Hungary":                  "Europe/Budapest",
+      "Belgrade, Serbia":                   "Europe/Belgrade",
+      "Vilnius, Lithuania":                 "Europe/Vilnius",
+      "Riga, Latvia":                       "Europe/Riga",
+      "Tallinn, Estonia":                   "Europe/Tallinn",
+      "Moscow, Russia":                     "Europe/Moscow",
+      "Riyadh, Saudi Arabia":               "Asia/Riyadh",
+      "Baghdad, Iraq":                      "Asia/Baghdad",
+      "Addis Ababa, Ethiopia":              "Africa/Addis_Ababa",
+      "Doha, Qatar":                        "Asia/Qatar",
+      "Kuwait City, Kuwait":                "Asia/Kuwait",
+      "Ankara, Turkey":                     "Europe/Istanbul",
+      "Minsk, Belarus":                     "Europe/Minsk",
+      "Tehran, Iran":                       "Asia/Tehran",
+      "Dubai, United Arab Emirates":        "Asia/Dubai",
+      "Muscat, Oman":                       "Asia/Muscat",
+      "Baku, Azerbaijan":                   "Asia/Baku",
+      "Tbilisi, Georgia":                   "Asia/Tbilisi",
+      "Yerevan, Armenia":                   "Asia/Yerevan",
+      "Port Louis, Mauritius":              "Indian/Mauritius",
+      "Kabul, Afghanistan":                 "Asia/Kabul",
+      "Islamabad, Pakistan":                "Asia/Karachi",
+      "Tashkent, Uzbekistan":               "Asia/Tashkent",
+      "Astana, Kazakhstan":                 "Asia/Almaty",
+      "New Delhi, India":                   "Asia/Kolkata",
+      "Colombo, Sri Lanka":                 "Asia/Colombo",
+      "Kathmandu, Nepal":                   "Asia/Kathmandu",
+      "Dhaka, Bangladesh":                  "Asia/Dhaka",
+      "Thimphu, Bhutan":                    "Asia/Thimphu",
+      "Naypyidaw, Myanmar":                 "Asia/Yangon",
+      "Bangkok, Thailand":                  "Asia/Bangkok",
+      "Hanoi, Vietnam":                     "Asia/Ho_Chi_Minh",
+      "Phnom Penh, Cambodia":               "Asia/Phnom_Penh",
+      "Vientiane, Laos":                    "Asia/Vientiane",
+      "Jakarta, Indonesia":                 "Asia/Jakarta",
+      "Ulaanbaatar, Mongolia":              "Asia/Ulaanbaatar",
+      "Beijing, China":                     "Asia/Shanghai",
+      "Singapore":                          "Asia/Singapore",
+      "Kuala Lumpur, Malaysia":             "Asia/Kuala_Lumpur",
+      "Manila, Philippines":                "Asia/Manila",
+      "Taipei, Taiwan":                     "Asia/Taipei",
+      "Perth, Australia":                   "Australia/Perth",
+      "Bandar Seri Begawan, Brunei":        "Asia/Brunei",
+      "Seoul, South Korea":                 "Asia/Seoul",
+      "Tokyo, Japan":                       "Asia/Tokyo",
+      "Pyongyang, North Korea":             "Asia/Pyongyang",
+      "Dili, Timor-Leste":                  "Asia/Dili",
+      "Darwin, Australia":                  "Australia/Darwin",
+      "Adelaide, Australia":                "Australia/Adelaide",
+      "Canberra, Australia":                "Australia/Sydney",
+      "Sydney, Australia":                  "Australia/Sydney",
+      "Port Moresby, Papua New Guinea":     "Pacific/Port_Moresby",
+      "Honiara, Solomon Islands":           "Pacific/Guadalcanal",
+      "Port Vila, Vanuatu":                 "Pacific/Efate",
+      "Noumea, New Caledonia":              "Pacific/Noumea",
+      "Auckland, New Zealand":              "Pacific/Auckland",
+      "Wellington, New Zealand":            "Pacific/Auckland",
+      "Suva, Fiji":                         "Pacific/Fiji",
+      "Funafuti, Tuvalu":                   "Pacific/Funafuti",
+      "Tarawa, Kiribati":                   "Pacific/Tarawa",
+      "Nuku'alofa, Tonga":                  "Pacific/Tongatapu",
+      "Apia, Samoa":                        "Pacific/Apia",
+      "Kiritimati, Kiribati":               "Pacific/Kiritimati",
+    };
+
+    function resolveTimezone(value) {
+      return TZ_MAP[value] ?? value ?? 'America/New_York';
+    }
+
+    // Moon phase
+    // SVG paths on a 64×64 viewBox, center (32,32), radius 30.
+    // Each path traces the illuminated portion of the disc.
+    const MOON_PATHS = {
+      new:    '',
+      waxCre: 'M32,2 A30,30 0 0,1 32,62 A22,30 0 0,0 32,2',
+      firstQ: 'M32,2 A30,30 0 0,1 32,62 L32,2Z',
+      waxGib: 'M32,2 A30,30 0 0,1 32,62 A38,30 0 0,1 32,2',
+      full:   'M32,2 A30,30 0 1,1 32,62 A30,30 0 1,1 32,2',
+      wanGib: 'M32,2 A38,30 0 0,0 32,62 A30,30 0 0,1 32,2',
+      lastQ:  'M32,2 A30,30 0 0,0 32,62 L32,2Z',
+      wanCre: 'M32,2 A22,30 0 0,1 32,62 A30,30 0 0,0 32,2',
+    };
+
+    const SYNODIC = 29.53058867; // days in a lunar cycle
+    const MOON_REF = new Date('2000-01-06T18:14:00Z'); // known new moon
+
+    function getMoonPhase(date) {
+      const diffDays = (date.getTime() - MOON_REF.getTime()) / 86400000;
+      // Age in days within current cycle (always positive)
+      const age = ((diffDays % SYNODIC) + SYNODIC) % SYNODIC;
+      const fraction = age / SYNODIC;
+
+      let name, pathKey;
+      if      (fraction < 0.025 || fraction > 0.975) { name = 'New Moon';        pathKey = 'new';    }
+      else if (fraction < 0.225)                      { name = 'Waxing Crescent'; pathKey = 'waxCre'; }
+      else if (fraction < 0.275)                      { name = 'First Quarter';   pathKey = 'firstQ'; }
+      else if (fraction < 0.475)                      { name = 'Waxing Gibbous';  pathKey = 'waxGib'; }
+      else if (fraction < 0.525)                      { name = 'Full Moon';       pathKey = 'full';   }
+      else if (fraction < 0.725)                      { name = 'Waning Gibbous';  pathKey = 'wanGib'; }
+      else if (fraction < 0.775)                      { name = 'Last Quarter';    pathKey = 'lastQ';  }
+      else                                             { name = 'Waning Crescent'; pathKey = 'wanCre'; }
+
+      const illumination = Math.round((1 - Math.abs(fraction - 0.5) * 2) * 100);
+      const ageDay = Math.floor(age) + 1; // 1-indexed (Day 1 of 29)
+
+      // Days until next significant phase
+      let nextLabel, daysUntil;
+      if (fraction < 0.25) {
+        nextLabel = 'First Quarter';
+        daysUntil = Math.round((0.25 - fraction) * SYNODIC);
+      } else if (fraction < 0.5) {
+        nextLabel = 'Full Moon';
+        daysUntil = Math.round((0.5 - fraction) * SYNODIC);
+      } else if (fraction < 0.75) {
+        nextLabel = 'Last Quarter';
+        daysUntil = Math.round((0.75 - fraction) * SYNODIC);
+      } else {
+        nextLabel = 'New Moon';
+        daysUntil = Math.round((1 - fraction) * SYNODIC);
+      }
+
+      return { name, path: MOON_PATHS[pathKey], illumination, ageDay, nextLabel, daysUntil };
+    }
+
+    // State
+    let settings = await xemd.settings.get();
+
+    // Render
+    function render() {
+      const tz       = resolveTimezone(settings.timezone);
+      const is12h    = settings.format === '12h';
+      const showSec  = settings.showSeconds !== false;
+      const showDate = settings.showDate    !== false;
+      const showMoon = settings.showMoon    !== false;
+      const bgUrl    = (settings.backgroundImageUrl || '').trim();
+
+      // Background image + glass card mode
+      if (bgUrl) {
+        document.body.style.backgroundImage =
+          `linear-gradient(rgba(0,0,0,0.38),rgba(0,0,0,0.38)),url(${JSON.stringify(bgUrl)})`;
+        document.body.classList.add('has-bg');
+      } else {
+        document.body.style.backgroundImage = '';
+        document.body.classList.remove('has-bg');
+      }
+
+      // Toggle layout mode
+      document.body.classList.toggle('moon-hidden', !showMoon);
+
+      // Clock
+      const now = new Date();
+
+      const hours   = now.toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hour12: is12h });
+      const minutes = now.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' });
+      const seconds = now.toLocaleString('en-US', { timeZone: tz, second: '2-digit' });
+      const ampm    = is12h
+        ? now.toLocaleString('en-US', { timeZone: tz, hour12: true }).slice(-2)
+        : '';
+
+      let h = hours;
+      if (!is12h) h = h.padStart(2, '0');
+
+      document.getElementById('time').innerHTML = `${h}<span class="colon">:</span>${minutes}`;
+
+      const secEl = document.getElementById('seconds');
+      secEl.textContent = seconds;
+      secEl.style.display = showSec ? '' : 'none';
+
+      const ampmEl = document.getElementById('ampm');
+      ampmEl.textContent = ampm;
+      ampmEl.style.display = is12h ? '' : 'none';
+
+      const dateEl = document.getElementById('date');
+      if (showDate) {
+        dateEl.style.display = '';
+        dateEl.textContent = now.toLocaleDateString('en-US', {
+          timeZone: tz,
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+        });
+      } else {
+        dateEl.style.display = 'none';
+      }
+
+      // Moon
+      if (showMoon) {
+        const moon = getMoonPhase(now);
+        document.getElementById('moon-path').setAttribute('d', moon.path);
+        document.getElementById('moon-phase-name').textContent = moon.name;
+        document.getElementById('moon-illum').textContent = `${moon.illumination}% Illuminated`;
+        document.getElementById('moon-age').textContent =
+          moon.daysUntil <= 1
+            ? `${moon.nextLabel} tomorrow`
+            : `${moon.nextLabel} in ${moon.daysUntil} days`;
+      }
+    }
+
+    xemd.onRefresh(render);
+    xemd.onSettingsChange(s => { settings = s; render(); });
+    render();
+    xemd.ready();
+  </script>
+</body>
+</html>
