@@ -36,8 +36,11 @@ app.set('trust proxy', 1);
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow same-origin requests (no Origin header) and known dev origins.
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    // Allow same-origin requests (no Origin header), sandboxed iframes (origin
+    // is the string "null" when sandbox lacks allow-same-origin), and known dev
+    // origins. Sandboxed iframes are further constrained by connect-src 'none'
+    // in the widget CSP, so they can load the SDK but cannot call the API.
+    if (!origin || origin === 'null' || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error('CORS: origin not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
