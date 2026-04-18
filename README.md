@@ -1,12 +1,12 @@
-# XEMD — Xeneon Edge Mac Dashboard
+# xemd — Xeneon Edge Mac Dashboard
 
-Your Corsair Xeneon Edge deserves better than to be a glorified side monitor when connected to a Mac. XEMD is an open-source, widget-driven kiosk dashboard built specifically for the Xeneon Edge 14.5" LCD (2560×720) connected to Apple Macs — filling the gap left by Corsair iCUE's lack of macOS support.
+Your Corsair Xeneon Edge deserves better than to be a glorified side monitor when connected to a Mac. xemd is an open-source, widget-driven kiosk dashboard built specifically for the Xeneon Edge 14.5" LCD connected to Apple Macs — filling the gap left by Corsair iCUE's lack of macOS support.
 
 ---
 
-## What is XEMD?
+## What is xemd?
 
-Corsair's iCUE software is Windows-only, which means Mac users with a Xeneon Edge have a beautiful ultrawide secondary display and no first-party software to drive it. XEMD is something I developed as an answer: self-hosted dashboard you deploy in one command and control through a browser-based admin panel.
+Corsair's iCUE software is Windows-only, which means Mac users with a Xeneon Edge have a beautiful ultrawide secondary display and no first-party software to drive it. xemd is something I developed as an answer: self-hosted dashboard you deploy in one command and control through a browser-based admin panel.
 
 Widgets run inside sandboxed iframes and communicate with the host through a small SDK. Anyone who can write HTML and JavaScript can build a widget — no build tools required, no framework lock-in. Drop a widget folder into `widgets/community/`, refresh the page, and it appears.
 
@@ -14,9 +14,9 @@ Widgets run inside sandboxed iframes and communicate with the host through a sma
 
 ## From the creator
 
-Hey — I'm **jaelving**. I was bored one day and after struggling to find a way to put my Xeneon Edge that was connected to my Mac Mini, I decided to build something. One thing led to another, and here we are.
+Hey — I'm **jaelving**. I was bored one day and after struggling to find a solution I liked for my Xeneon Edge that was connected to my Mac Mini, I decided to build something. One thing led to another, and here we are.
 
-XEMD is free. Fork it, hack it, break it, rebuild it — that's the point. If you make a widget you're proud of, open a PR and share it.
+xemd is free. Fork it, hack it, break it, rebuild it — that's the point. If you make a widget you're proud of, open a PR and share it.
 
 ### API keys and third-party services
 
@@ -36,9 +36,9 @@ Happy building.
 
 ## Display compatibility
 
-XEMD is built for the **32:9 aspect ratio**. That's not a limitation of the implementation — it's the product. Every widget layout is designed for a wide, short panel with generous horizontal space and intentionally limited vertical height. The multi-column designs that make the F1, Calendar, and Radar widgets compelling simply don't have a natural collapsed form for 16:9, 4:3, or portrait screens. Traditional responsive web design isn't the right tool here.
+xemd is built for the **32:9 aspect ratio**. That's not a limitation of the implementation — it's the product. Every widget layout is designed for a wide, short panel with generous horizontal space and intentionally limited vertical height. The multi-column designs that make the F1, Calendar, and Radar widgets compelling simply don't have a natural collapsed form for 16:9, 4:3, or portrait screens. Traditional responsive web design isn't the right tool here.
 
-What XEMD *does* support is **multiple 32:9 resolutions**. Every official widget declares more than one target size in its manifest, and the host automatically picks the closest match to your display and scales from there:
+What xemd *does* support is **multiple 32:9 resolutions**. Every official widget declares more than one target size in its manifest, and the host automatically picks the closest match to your display and scales from there:
 
 | Resolution | Ratio | Use case |
 |---|---|---|
@@ -100,7 +100,7 @@ XEMD_HOST_PORT=8080 XEMD_DIR=~/my-xemd curl -fsSL https://raw.githubusercontent.
 
 ---
 
-## Official Widgets
+## "Official" Widgets
 
 Eight widgets ship ready to use. Each has its own README with setup instructions, settings reference, and API key details.
 
@@ -119,7 +119,7 @@ Eight widgets ship ready to use. Each has its own README with setup instructions
 
 ## Architecture
 
-XEMD is two containers:
+xemd is two containers:
 
 - **`xemd-host`** — React/Vite app served by nginx. Handles kiosk view, widget rotation, and the admin panel. Renders each widget inside a `sandbox="allow-scripts"` iframe — no `allow-same-origin`, so widgets are fully isolated origins.
 - **`xemd-api`** — Express/TypeScript API. Serves widget files, proxies outbound HTTP, stores encrypted secrets, persists settings in SQLite.
