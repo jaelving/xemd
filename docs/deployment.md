@@ -6,7 +6,7 @@ This guide covers everything you need to get XEMD running on your Mac (or any Li
 
 ## Prerequisites
 
-- **Docker** and **Docker Compose** (v2) installed and running
+- **Docker** and **Docker Compose** (v2+) installed and running — v5 introduced stricter YAML parsing; see [Troubleshooting](#troubleshooting) if you hit a parse error on startup
 - A Mac Mini (or any macOS or Linux machine) — Apple Silicon and Intel both work
 - A **Corsair Xeneon Edge 14.5" LCD** (2560×720) connected as a second display
 
@@ -145,3 +145,26 @@ This mounts `apps/host` and `apps/api` as volumes so changes are reflected witho
 | Internal | — | `3001` | Express inside `xemd-api` container |
 
 Both host-bound ports default to `localhost`. If you are accessing XEMD from another machine on your network, replace `localhost` with the host machine's IP address. You may also want to put a reverse proxy (nginx, Caddy) in front if you need HTTPS or a custom domain.
+
+---
+
+## Troubleshooting
+
+### Docker Compose parse error on startup
+
+Docker Compose v5 introduced stricter YAML parsing — values containing a colon (`:`) must be quoted. If you see an error like:
+
+```
+yaml: line N: mapping values are not allowed in this context
+```
+
+Ensure you are using the `docker-compose.yml` from the repo (not a hand-edited copy). All environment variable lines that contain colons are already quoted in the distributed file.
+
+### Widget timeout / "Widget failed to load"
+
+1. Open browser devtools → Console. If you see a CORS error or `postMessage` target mismatch, make sure you are using the latest images (`docker compose pull && docker compose up -d`).
+2. If the widget times out but the console is clean, check the API is reachable: `curl http://localhost:6600/api/health` should return `{"status":"ok"}`.
+
+### Settings not saving in admin panel
+
+All write operations (PUT/POST) require the `Content-Type: application/json` header. This is sent automatically by the admin panel — if you are making direct API calls, ensure the header is set.
