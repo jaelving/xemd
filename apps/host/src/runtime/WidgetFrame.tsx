@@ -65,7 +65,7 @@ export function WidgetFrame({ widgetId, source, manifest, settings }: WidgetFram
     (id: string, result?: unknown, error?: string) => {
       iframeRef.current?.contentWindow?.postMessage(
         { type: 'xemd:response', id, result, error },
-        window.location.origin,
+        '*', // sandboxed iframes have origin 'null' — '*' is required for delivery
       );
     },
     [],
