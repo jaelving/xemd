@@ -1,0 +1,781 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      color: #e8e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      width: 2560px;
+      height: 720px;
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+      padding: 28px 32px;
+      gap: 24px;
+      user-select: none;
+      background-image: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.05) 0%, transparent 50%);
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    /* Left panel — current conditions */
+    #panel-current {
+      flex: 0 0 860px;
+    }
+
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .location-row svg {
+      flex-shrink: 0;
+    }
+
+    .location-text {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .condition-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 4px;
+    }
+
+    .condition-emoji {
+      font-size: 5.5rem;
+      line-height: 1;
+    }
+
+    .condition-desc {
+      font-size: 2rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .temp-main {
+      font-size: 9rem;
+      font-weight: 100;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.55) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 8px 0 4px;
+    }
+
+    .temp-unit {
+      font-size: 3.5rem;
+      font-weight: 300;
+    }
+
+    .feels-like {
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .stat-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stat-value {
+      font-size: 1.45rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.78);
+    }
+
+    /* Center panel — hourly */
+    #panel-hourly {
+      flex: 1 1 0;
+    }
+
+    .panel-header {
+      font-size: 1rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.28);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 18px;
+      flex-shrink: 0;
+    }
+
+    .hourly-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .hourly-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.15s;
+    }
+
+    .hourly-row.is-now {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    .hourly-time {
+      width: 120px;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .hourly-row.is-now .hourly-time {
+      color: rgba(255,255,255,0.9);
+    }
+
+    .hourly-icon {
+      width: 52px;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+
+    .hourly-temp {
+      flex: 1;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.7);
+      text-align: right;
+    }
+
+    .hourly-row.is-now .hourly-temp {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Right panel — 5-day + tiles */
+    #panel-forecast {
+      flex: 0 0 580px;
+    }
+
+    .forecast-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 18px;
+    }
+
+    .forecast-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: border-color 0.15s;
+    }
+
+    .forecast-row:hover {
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .forecast-day {
+      width: 140px;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .forecast-icon {
+      width: 44px;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .forecast-temps {
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .forecast-high {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .forecast-low {
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.32);
+    }
+
+    .tiles-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .info-tile {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+    }
+
+    .tile-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.28);
+    }
+
+    .tile-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .tile-sub {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .uv-low  { color: #4ade80; }
+    .uv-mid  { color: #fb923c; }
+    .uv-high { color: #f87171; }
+
+    .precip-value { color: #60a5fa; }
+
+    /* Loading / Error */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.4s;
+    }
+
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-text {
+      font-size: 1.5rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.08em;
+    }
+
+    .loading-dot {
+      display: inline-block;
+      animation: dot-pulse 1.4s infinite both;
+    }
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dot-pulse {
+      0%, 80%, 100% { opacity: 0.2; }
+      40% { opacity: 1; }
+    }
+
+    #error-msg {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: #f87171;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay">
+    <div class="loading-text">
+      Loading weather
+      <span class="loading-dot">.</span>
+      <span class="loading-dot">.</span>
+      <span class="loading-dot">.</span>
+    </div>
+  </div>
+
+  <!-- Error toast -->
+  <div id="error-msg"></div>
+
+  <!-- Left: Current conditions -->
+  <div class="card" id="panel-current">
+    <div class="location-row">
+      <!-- MapPin icon -->
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 10c0 6-8 13-8 13s-8-7-8-13a8 8 0 0 1 16 0Z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+      <div class="location-text" id="cur-location">—</div>
+    </div>
+    <div class="condition-row">
+      <span class="condition-emoji" id="cur-emoji">—</span>
+      <span class="condition-desc" id="cur-desc">—</span>
+    </div>
+    <div class="temp-main">
+      <span id="cur-temp">—</span><span class="temp-unit" id="cur-unit">°F</span>
+    </div>
+    <div class="feels-like" id="cur-feels">Feels like —</div>
+    <div class="stats-grid">
+      <div class="stat-pill">
+        <div class="stat-label">
+          <!-- Droplets icon -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+          Humidity
+        </div>
+        <div class="stat-value" id="cur-humidity">—</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">
+          <!-- Wind icon -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/>
+            <path d="M9.6 4.6A2 2 0 1 1 11 8H2"/>
+            <path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+          </svg>
+          Wind
+        </div>
+        <div class="stat-value" id="cur-wind">—</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">
+          <!-- Sunrise icon -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/>
+            <path d="M2 18h2"/><path d="M20 18h2"/>
+            <path d="m19.07 10.93-1.41 1.41"/>
+            <path d="M22 22H2"/>
+            <path d="m8 6 4-4 4 4"/>
+            <path d="M16 18a4 4 0 0 0-8 0"/>
+          </svg>
+          Sunrise
+        </div>
+        <div class="stat-value" id="cur-sunrise">—</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">
+          <!-- Sunset icon -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/>
+            <path d="M2 18h2"/><path d="M20 18h2"/>
+            <path d="m19.07 10.93-1.41 1.41"/>
+            <path d="M22 22H2"/>
+            <path d="m16 6-4 4-4-4"/>
+            <path d="M16 18a4 4 0 0 0-8 0"/>
+          </svg>
+          Sunset
+        </div>
+        <div class="stat-value" id="cur-sunset">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center: Hourly forecast -->
+  <div class="card" id="panel-hourly">
+    <div class="panel-header">Hourly Forecast</div>
+    <div class="hourly-list" id="hourly-list"></div>
+  </div>
+
+  <!-- Right: 5-day + tiles -->
+  <div class="card" id="panel-forecast">
+    <div class="panel-header">5-Day Outlook</div>
+    <div class="forecast-list" id="forecast-list"></div>
+    <div class="tiles-row">
+      <div class="info-tile">
+        <div class="tile-label">Max UV</div>
+        <div class="tile-value" id="tile-uv">—</div>
+        <div class="tile-sub" id="tile-uv-sub">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="tile-label">Precipitation</div>
+        <div class="tile-value precip-value" id="tile-precip">—</div>
+        <div class="tile-sub">chance today</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { xemd } from '/sdk/widget-sdk.js';
+
+    // Weather code → emoji + description
+    function weatherInfo(code) {
+      if (code === 0)                         return { emoji: '☀️',  desc: 'Clear sky' };
+      if (code === 1)                         return { emoji: '🌤️', desc: 'Mainly clear' };
+      if (code === 2)                         return { emoji: '⛅',  desc: 'Partly cloudy' };
+      if (code === 3)                         return { emoji: '☁️',  desc: 'Overcast' };
+      if (code === 45 || code === 48)         return { emoji: '🌫️', desc: 'Foggy' };
+      if (code >= 51 && code <= 57)           return { emoji: '🌦️', desc: 'Drizzle' };
+      if (code >= 61 && code <= 67)           return { emoji: '🌧️', desc: 'Rain' };
+      if ((code >= 71 && code <= 77) ||
+          code === 85 || code === 86)         return { emoji: '❄️',  desc: 'Snow' };
+      if (code >= 80 && code <= 82)           return { emoji: '🌨️', desc: 'Showers' };
+      if (code === 95 || code === 96 ||
+          code === 99)                        return { emoji: '⛈️',  desc: 'Thunderstorm' };
+      return { emoji: '🌡️', desc: 'Unknown' };
+    }
+
+    // Wind direction
+    function windDir(deg) {
+      const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+      return dirs[Math.round(deg / 45) % 8];
+    }
+
+    // Time formatting
+    function fmtTime(isoString) {
+      return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function fmtHour(isoString) {
+      const h = new Date(isoString).getHours();
+      if (h === 0)  return '12 AM';
+      if (h === 12) return '12 PM';
+      return h < 12 ? `${h} AM` : `${h - 12} PM`;
+    }
+
+    function dayName(isoDateStr) {
+      const [y, m, d] = isoDateStr.split('-').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' });
+    }
+
+    // UV label
+    function uvLabel(uv) {
+      if (uv < 3)  return { text: 'Low',      cls: 'uv-low' };
+      if (uv < 7)  return { text: 'Moderate', cls: 'uv-mid' };
+      return              { text: 'High',     cls: 'uv-high' };
+    }
+
+    function rt(v) { return Math.round(v); }
+
+    // City → coordinates lookup
+    const CITY_DATA = {
+      "Abu Dhabi, United Arab Emirates":  { lat: 24.4539,  lon: 54.3773 },
+      "Accra, Ghana":                     { lat: 5.6037,   lon: -0.1870 },
+      "Addis Ababa, Ethiopia":            { lat: 9.0054,   lon: 38.7636 },
+      "Amman, Jordan":                    { lat: 31.9566,  lon: 35.9457 },
+      "Amsterdam, Netherlands":           { lat: 52.3676,  lon: 4.9041  },
+      "Anchorage, United States":         { lat: 61.2181,  lon: -149.9003 },
+      "Astana, Kazakhstan":               { lat: 51.1811,  lon: 71.4460  },
+      "Athens, Greece":                   { lat: 37.9838,  lon: 23.7275  },
+      "Atlanta, United States":           { lat: 33.7490,  lon: -84.3880 },
+      "Auckland, New Zealand":            { lat: -36.8509, lon: 174.7645 },
+      "Baghdad, Iraq":                    { lat: 33.3152,  lon: 44.3661  },
+      "Bali, Indonesia":                  { lat: -8.3405,  lon: 115.0920 },
+      "Bangkok, Thailand":                { lat: 13.7563,  lon: 100.5018 },
+      "Barcelona, Spain":                 { lat: 41.3851,  lon: 2.1734   },
+      "Beijing, China":                   { lat: 39.9042,  lon: 116.4074 },
+      "Beirut, Lebanon":                  { lat: 33.8938,  lon: 35.5018  },
+      "Belgrade, Serbia":                 { lat: 44.8176,  lon: 20.4569  },
+      "Berlin, Germany":                  { lat: 52.5200,  lon: 13.4050  },
+      "Bogotá, Colombia":                 { lat: 4.7110,   lon: -74.0721 },
+      "Boston, United States":            { lat: 42.3601,  lon: -71.0589 },
+      "Brasília, Brazil":                 { lat: -15.7942, lon: -47.8825 },
+      "Brisbane, Australia":              { lat: -27.4698, lon: 153.0251 },
+      "Brussels, Belgium":                { lat: 50.8503,  lon: 4.3517   },
+      "Bucharest, Romania":               { lat: 44.4268,  lon: 26.1025  },
+      "Budapest, Hungary":                { lat: 47.4979,  lon: 19.0402  },
+      "Buenos Aires, Argentina":          { lat: -34.6037, lon: -58.3816 },
+      "Cairo, Egypt":                     { lat: 30.0444,  lon: 31.2357  },
+      "Calgary, Canada":                  { lat: 51.0447,  lon: -114.0719 },
+      "Cape Town, South Africa":          { lat: -33.9249, lon: 18.4241  },
+      "Caracas, Venezuela":               { lat: 10.4806,  lon: -66.9036 },
+      "Casablanca, Morocco":              { lat: 33.5731,  lon: -7.5898  },
+      "Chengdu, China":                   { lat: 30.5728,  lon: 104.0668 },
+      "Chennai, India":                   { lat: 13.0827,  lon: 80.2707  },
+      "Chicago, United States":           { lat: 41.8781,  lon: -87.6298 },
+      "Colombo, Sri Lanka":               { lat: 6.9271,   lon: 79.8612  },
+      "Copenhagen, Denmark":              { lat: 55.6761,  lon: 12.5683  },
+      "Dallas, United States":            { lat: 32.7767,  lon: -96.7970 },
+      "Dar es Salaam, Tanzania":          { lat: -6.7924,  lon: 39.2083  },
+      "Delhi, India":                     { lat: 28.6139,  lon: 77.2090  },
+      "Denver, United States":            { lat: 39.7392,  lon: -104.9903 },
+      "Dhaka, Bangladesh":                { lat: 23.8103,  lon: 90.4125  },
+      "Doha, Qatar":                      { lat: 25.2854,  lon: 51.5310  },
+      "Dubai, United Arab Emirates":      { lat: 25.2048,  lon: 55.2708  },
+      "Dublin, Ireland":                  { lat: 53.3498,  lon: -6.2603  },
+      "Edinburgh, United Kingdom":        { lat: 55.9533,  lon: -3.1883  },
+      "Frankfurt, Germany":               { lat: 50.1109,  lon: 8.6821   },
+      "Guadalajara, Mexico":              { lat: 20.6597,  lon: -103.3496 },
+      "Hanoi, Vietnam":                   { lat: 21.0285,  lon: 105.8542 },
+      "Havana, Cuba":                     { lat: 23.1136,  lon: -82.3666 },
+      "Helsinki, Finland":                { lat: 60.1699,  lon: 24.9384  },
+      "Ho Chi Minh City, Vietnam":        { lat: 10.8231,  lon: 106.6297 },
+      "Hong Kong":                        { lat: 22.3193,  lon: 114.1694 },
+      "Honolulu, United States":          { lat: 21.3069,  lon: -157.8583 },
+      "Houston, United States":           { lat: 29.7604,  lon: -95.3698 },
+      "Istanbul, Turkey":                 { lat: 41.0082,  lon: 28.9784  },
+      "Jakarta, Indonesia":               { lat: -6.2088,  lon: 106.8456 },
+      "Johannesburg, South Africa":       { lat: -26.2041, lon: 28.0473  },
+      "Kabul, Afghanistan":               { lat: 34.5553,  lon: 69.2075  },
+      "Karachi, Pakistan":                { lat: 24.8607,  lon: 67.0011  },
+      "Kathmandu, Nepal":                 { lat: 27.7172,  lon: 85.3240  },
+      "Kiev, Ukraine":                    { lat: 50.4501,  lon: 30.5234  },
+      "Kolkata, India":                   { lat: 22.5726,  lon: 88.3639  },
+      "Kuala Lumpur, Malaysia":           { lat: 3.1390,   lon: 101.6869 },
+      "Kuwait City, Kuwait":              { lat: 29.3759,  lon: 47.9774  },
+      "Lagos, Nigeria":                   { lat: 6.5244,   lon: 3.3792   },
+      "Las Vegas, United States":         { lat: 36.1699,  lon: -115.1398 },
+      "Lima, Peru":                       { lat: -12.0464, lon: -77.0428 },
+      "Lisbon, Portugal":                 { lat: 38.7169,  lon: -9.1399  },
+      "London, United Kingdom":           { lat: 51.5074,  lon: -0.1278  },
+      "Los Angeles, United States":       { lat: 34.0522,  lon: -118.2437 },
+      "Madrid, Spain":                    { lat: 40.4168,  lon: -3.7038  },
+      "Manila, Philippines":              { lat: 14.5995,  lon: 120.9842 },
+      "Melbourne, Australia":             { lat: -37.8136, lon: 144.9631 },
+      "Mexico City, Mexico":              { lat: 19.4326,  lon: -99.1332 },
+      "Miami, United States":             { lat: 25.7617,  lon: -80.1918 },
+      "Milan, Italy":                     { lat: 45.4654,  lon: 9.1859   },
+      "Minneapolis, United States":       { lat: 44.9778,  lon: -93.2650 },
+      "Montreal, Canada":                 { lat: 45.5017,  lon: -73.5673 },
+      "Moscow, Russia":                   { lat: 55.7558,  lon: 37.6173  },
+      "Mumbai, India":                    { lat: 19.0760,  lon: 72.8777  },
+      "Munich, Germany":                  { lat: 48.1351,  lon: 11.5820  },
+      "Muscat, Oman":                     { lat: 23.5880,  lon: 58.3829  },
+      "Nairobi, Kenya":                   { lat: -1.2921,  lon: 36.8219  },
+      "New York, United States":          { lat: 40.7128,  lon: -74.0060 },
+      "Osaka, Japan":                     { lat: 34.6937,  lon: 135.5023 },
+      "Oslo, Norway":                     { lat: 59.9139,  lon: 10.7522  },
+      "Paris, France":                    { lat: 48.8566,  lon: 2.3522   },
+      "Perth, Australia":                 { lat: -31.9505, lon: 115.8605 },
+      "Philadelphia, United States":      { lat: 39.9526,  lon: -75.1652 },
+      "Phnom Penh, Cambodia":             { lat: 11.5564,  lon: 104.9282 },
+      "Phoenix, United States":           { lat: 33.4484,  lon: -112.0740 },
+      "Prague, Czech Republic":           { lat: 50.0755,  lon: 14.4378  },
+      "Pyongyang, North Korea":           { lat: 39.0392,  lon: 125.7625 },
+      "Reykjavik, Iceland":               { lat: 64.1466,  lon: -21.9426 },
+      "Rio de Janeiro, Brazil":           { lat: -22.9068, lon: -43.1729 },
+      "Riyadh, Saudi Arabia":             { lat: 24.7136,  lon: 46.6753  },
+      "Rome, Italy":                      { lat: 41.9028,  lon: 12.4964  },
+      "San Francisco, United States":     { lat: 37.7749,  lon: -122.4194 },
+      "Santiago, Chile":                  { lat: -33.4489, lon: -70.6693 },
+      "São Paulo, Brazil":                { lat: -23.5505, lon: -46.6333 },
+      "Seattle, United States":           { lat: 47.6062,  lon: -122.3321 },
+      "Seoul, South Korea":               { lat: 37.5665,  lon: 126.9780 },
+      "Shanghai, China":                  { lat: 31.2304,  lon: 121.4737 },
+      "Singapore":                        { lat: 1.3521,   lon: 103.8198 },
+      "Sofia, Bulgaria":                  { lat: 42.6977,  lon: 23.3219  },
+      "St. Petersburg, Russia":           { lat: 59.9343,  lon: 30.3351  },
+      "Stockholm, Sweden":                { lat: 59.3293,  lon: 18.0686  },
+      "Sydney, Australia":                { lat: -33.8688, lon: 151.2093 },
+      "Taipei, Taiwan":                   { lat: 25.0330,  lon: 121.5654 },
+      "Tashkent, Uzbekistan":             { lat: 41.2995,  lon: 69.2401  },
+      "Tehran, Iran":                     { lat: 35.6892,  lon: 51.3890  },
+      "Tel Aviv, Israel":                 { lat: 32.0853,  lon: 34.7818  },
+      "Tokyo, Japan":                     { lat: 35.6762,  lon: 139.6503 },
+      "Toronto, Canada":                  { lat: 43.6532,  lon: -79.3832 },
+      "Tunis, Tunisia":                   { lat: 36.8190,  lon: 10.1658  },
+      "Ulaanbaatar, Mongolia":            { lat: 47.8864,  lon: 106.9057 },
+      "Vancouver, Canada":                { lat: 49.2827,  lon: -123.1207 },
+      "Vienna, Austria":                  { lat: 48.2082,  lon: 16.3738  },
+      "Warsaw, Poland":                   { lat: 52.2297,  lon: 21.0122  },
+      "Washington DC, United States":     { lat: 38.9072,  lon: -77.0369 },
+      "Wellington, New Zealand":          { lat: -41.2866, lon: 174.7756 },
+      "Yangon, Myanmar":                  { lat: 16.8661,  lon: 96.1951  },
+      "Zurich, Switzerland":              { lat: 47.3769,  lon: 8.5417   },
+    };
+
+    function resolveCity(value) {
+      // Accept city-name label (new) or fall back to London
+      return CITY_DATA[value] ?? CITY_DATA["London, United Kingdom"];
+    }
+
+    // Fetch & render
+    async function fetchAndRender() {
+      const settings  = await xemd.settings.get();
+      const cityEntry = resolveCity(settings.city);
+      const lat       = cityEntry.lat;
+      const lon       = cityEntry.lon;
+      const loc       = settings.city ?? 'London, United Kingdom';
+      const units     = settings.units === 'celsius' ? 'celsius' : 'fahrenheit';
+      const unitLabel = units === 'celsius' ? '°C' : '°F';
+      const speedUnit = units === 'celsius' ? 'km/h' : 'mph';
+
+      const url =
+        `https://api.open-meteo.com/v1/forecast` +
+        `?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,apparent_temperature,relative_humidity_2m,` +
+        `weather_code,wind_speed_10m,wind_direction_10m` +
+        `&hourly=temperature_2m,weather_code` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,` +
+        `sunrise,sunset,uv_index_max,precipitation_probability_max` +
+        `&temperature_unit=${units}` +
+        `&wind_speed_unit=${units === 'celsius' ? 'kmh' : 'mph'}` +
+        `&timezone=auto` +
+        `&forecast_days=6`;
+
+      let data;
+      try {
+        const resp = await xemd.proxy.fetch(url);
+        data = await resp.json();
+      } catch (err) {
+        showError('Failed to load weather data.');
+        return;
+      }
+
+      hideError();
+
+      const c   = data.current;
+      const hr  = data.hourly;
+      const day = data.daily;
+      const info = weatherInfo(c.weather_code);
+
+      // Left panel
+      document.getElementById('cur-location').textContent = loc;
+      document.getElementById('cur-emoji').textContent    = info.emoji;
+      document.getElementById('cur-desc').textContent     = info.desc;
+      document.getElementById('cur-temp').textContent     = rt(c.temperature_2m);
+      document.getElementById('cur-unit').textContent     = unitLabel;
+      document.getElementById('cur-feels').textContent    = `Feels like ${rt(c.apparent_temperature)}${unitLabel}`;
+      document.getElementById('cur-humidity').textContent = `${c.relative_humidity_2m}%`;
+      document.getElementById('cur-wind').textContent     = `${rt(c.wind_speed_10m)} ${speedUnit} ${windDir(c.wind_direction_10m)}`;
+      document.getElementById('cur-sunrise').textContent  = fmtTime(day.sunrise[0]);
+      document.getElementById('cur-sunset').textContent   = fmtTime(day.sunset[0]);
+
+      // Hourly panel
+      const now = new Date();
+      const currentHourISO = now.toISOString().slice(0, 13);
+      let startIdx = hr.time.findIndex(t => t.startsWith(currentHourISO));
+      if (startIdx < 0) startIdx = 0;
+
+      const hourlyList = document.getElementById('hourly-list');
+      hourlyList.innerHTML = '';
+
+      const hoursToShow = Math.min(10, hr.time.length - startIdx);
+      for (let i = 0; i < hoursToShow; i++) {
+        const idx = startIdx + i;
+        const wi  = weatherInfo(hr.weather_code[idx]);
+        const row = document.createElement('div');
+        row.className = 'hourly-row' + (i === 0 ? ' is-now' : '');
+        row.innerHTML = `
+          <div class="hourly-time">${i === 0 ? 'Now' : fmtHour(hr.time[idx])}</div>
+          <div class="hourly-icon">${wi.emoji}</div>
+          <div class="hourly-temp">${rt(hr.temperature_2m[idx])}${unitLabel}</div>
+        `;
+        hourlyList.appendChild(row);
+      }
+
+      // 5-Day panel
+      const forecastList = document.getElementById('forecast-list');
+      forecastList.innerHTML = '';
+
+      for (let i = 1; i <= 5; i++) {
+        if (i >= day.time.length) break;
+        const wi  = weatherInfo(day.weather_code[i]);
+        const row = document.createElement('div');
+        row.className = 'forecast-row';
+        row.innerHTML = `
+          <div class="forecast-day">${dayName(day.time[i])}</div>
+          <div class="forecast-icon">${wi.emoji}</div>
+          <div class="forecast-temps">
+            <span class="forecast-high">${rt(day.temperature_2m_max[i])}${unitLabel}</span>
+            <span class="forecast-low">${rt(day.temperature_2m_min[i])}${unitLabel}</span>
+          </div>
+        `;
+        forecastList.appendChild(row);
+      }
+
+      // Tiles
+      const uvVal  = Math.round(day.uv_index_max[0] ?? 0);
+      const uvInfo = uvLabel(uvVal);
+      const uvEl   = document.getElementById('tile-uv');
+      uvEl.textContent = uvVal;
+      uvEl.className   = `tile-value ${uvInfo.cls}`;
+      document.getElementById('tile-uv-sub').textContent = uvInfo.text;
+
+      document.getElementById('tile-precip').textContent =
+        `${day.precipitation_probability_max[0] ?? 0}%`;
+
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = '';
+    }
+
+    function hideError() {
+      document.getElementById('error-msg').style.display = 'none';
+    }
+
+    await fetchAndRender();
+    xemd.onRefresh(fetchAndRender);
+    xemd.ready();
+  </script>
+</body>
+</html>

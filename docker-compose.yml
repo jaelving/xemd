@@ -1,0 +1,25 @@
+services:
+  xemd-host:
+    image: ghcr.io/jaelving/xemd-host:latest
+    ports:
+      - "${XEMD_HOST_PORT:-6600}:80"
+    depends_on:
+      - xemd-api
+
+  xemd-api:
+    image: ghcr.io/jaelving/xemd-api:latest
+    # Port 3001 is intentionally not exposed on the host — the API is an
+    # internal service reached only through the nginx reverse proxy above.
+    # If you need direct API access for debugging, add:
+    #   ports:
+    #     - "127.0.0.1:3001:3001"
+    volumes:
+      - ./data:/data
+      - ./widgets/community:/widgets/community
+    environment:
+      - "XEMD_MASTER_KEY=${XEMD_MASTER_KEY:?Set XEMD_MASTER_KEY in .env - run: openssl rand -hex 32}"
+      - "XEMD_ADMIN_TOKEN=${XEMD_ADMIN_TOKEN:?Set XEMD_ADMIN_TOKEN in .env - run: openssl rand -hex 32}"
+      - XEMD_ALLOWED_ORIGIN=${XEMD_ALLOWED_ORIGIN:-}
+      - WIDGETS_DIR=/widgets
+      - PORT=3001
+      - NODE_ENV=production

@@ -1,0 +1,21 @@
+{
+  "id": "f1-schedule",
+  "name": "F1 Schedule",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Next F1 race countdown, driver and constructor standings, weekend session schedule, and full season calendar.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 300,
+  "permissions": {
+    "proxy": [
+      "https://api.jolpi.ca/**",
+      "https://api.openf1.org/**",
+      "https://files-f1.motorsportcalendars.com/**"
+    ],
+    "secrets": []
+  },
+  "settings": [
+    { "key": "racesToShow", "label": "Upcoming races to show (Calendar tab)", "type": "number", "default": 5, "min": 3, "max": 8 }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "crypto",
+  "name": "Crypto",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Live crypto prices, sparklines, and market stats via CoinGecko.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 300,
+  "permissions": {
+    "proxy": ["https://api.coingecko.com/**"],
+    "secrets": []
+  },
+  "settings": [
+    {
+      "key": "coins",
+      "label": "Coin IDs (comma-separated)",
+      "type": "string",
+      "default": "bitcoin,ethereum,solana,cardano,chainlink"
+    }
+  ]
+}

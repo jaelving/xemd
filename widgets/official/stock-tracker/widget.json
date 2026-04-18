@@ -1,0 +1,27 @@
+{
+  "id": "stock-tracker",
+  "name": "Stock Tracker",
+  "version": "1.0.0",
+  "author": "XEMD Team",
+  "description": "Live stock quotes and mini charts via Finnhub. Requires a free Finnhub API key.",
+  "entry": "index.html",
+  "dimensions": [{ "w": 2560, "h": 720 }, { "w": 1920, "h": 540 }],
+  "refreshInterval": 60,
+  "permissions": {
+    "proxy": ["https://finnhub.io/**"],
+    "secrets": ["FINNHUB_KEY"]
+  },
+  "settings": [
+    {
+      "key": "symbols",
+      "label": "Symbols (comma-separated)",
+      "type": "string",
+      "default": "AAPL,TSLA,NVDA,MSFT,AMZN"
+    },
+    {
+      "key": "FINNHUB_KEY",
+      "label": "Finnhub API Key",
+      "type": "secret"
+    }
+  ]
+}

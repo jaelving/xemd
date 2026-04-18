@@ -1,0 +1,1 @@
+export { KioskView } from './KioskView';

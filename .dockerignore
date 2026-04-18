@@ -1,0 +1,30 @@
+# Dependencies and build cache
+node_modules
+.turbo
+dist
+*.tsbuildinfo
+
+# Git metadata
+.git
+.gitignore
+
+# Environment and secrets
+.env
+.env.local
+
+# Database and runtime data
+data/
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# IDE settings
+.claude/
+
+# Internal development notes
+docs/BUILD_REFERENCE.md
+docs/LESSONS_LEARNED.md
+
+# Community widgets (volume-mounted at runtime, not baked into image)
+widgets/community/
