@@ -20,6 +20,8 @@ export function WidgetSettingsForm({ widgetId, settings, currentValues }: Props)
     return init;
   });
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
+  const [secretStates, setSecretStates] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [secretErrors, setSecretErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const saveSettings = useSaveSettings();
   const saveSecret   = useSaveSecret();
@@ -172,15 +174,34 @@ export function WidgetSettingsForm({ widgetId, settings, currentValues }: Props)
                 />
                 <button
                   onClick={async () => {
-                    await saveSecret.mutateAsync({ widgetId, key: s.key, value: secretValues[s.key] ?? '' });
-                    setSecretValues(v => ({ ...v, [s.key]: '' }));
+                    setSecretStates(v => ({ ...v, [s.key]: 'saving' }));
+                    try {
+                      await saveSecret.mutateAsync({ widgetId, key: s.key, value: secretValues[s.key] ?? '' });
+                      setSecretValues(v => ({ ...v, [s.key]: '' }));
+                      setSecretStates(v => ({ ...v, [s.key]: 'saved' }));
+                      setTimeout(() => setSecretStates(v => ({ ...v, [s.key]: 'idle' })), 2000);
+                    } catch (err) {
+                      const msg = err instanceof Error ? err.message : 'unknown error';
+                      setSecretErrors(v => ({ ...v, [s.key]: msg }));
+                      setSecretStates(v => ({ ...v, [s.key]: 'error' }));
+                      setTimeout(() => setSecretStates(v => ({ ...v, [s.key]: 'idle' })), 5000);
+                    }
                   }}
-                  disabled={saveSecret.isPending || !secretValues[s.key]}
-                  className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-900 dark:text-white rounded-lg text-sm transition-colors"
+                  disabled={secretStates[s.key] === 'saving' || !secretValues[s.key]}
+                  className={`px-3 py-2 border rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                    ${secretStates[s.key] === 'saved'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                      : secretStates[s.key] === 'error'
+                        ? 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+                        : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-900 dark:text-white'
+                    }`}
                 >
-                  Save
+                  {secretStates[s.key] === 'saving' ? '…' : secretStates[s.key] === 'saved' ? '✓' : secretStates[s.key] === 'error' ? 'Failed' : 'Save'}
                 </button>
               </div>
+              {secretStates[s.key] === 'error' && secretErrors[s.key] && (
+                <p className="text-xs text-red-500 dark:text-red-400 font-mono break-all">{secretErrors[s.key]}</p>
+              )}
             </div>
           ))}
         </div>

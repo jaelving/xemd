@@ -143,6 +143,7 @@ migrateLegacySecrets(db, MASTER_KEY);
 const DEFAULT_SECRETS: Array<{ widgetId: string; key: string; envVar: string }> = [
   { widgetId: 'flight-tracker', key: 'flightaware_key', envVar: 'XEMD_FLIGHTAWARE_KEY' },
   { widgetId: 'stock-tracker',  key: 'api_key',         envVar: 'XEMD_STOCK_TRACKER_API_KEY' },
+  { widgetId: 'unifi',          key: 'UNIFI_KEY',       envVar: 'XEMD_UNIFI_API_KEY' },
 ];
 
 const seedSecret = db.prepare(
