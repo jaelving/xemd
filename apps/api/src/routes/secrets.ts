@@ -19,7 +19,7 @@ function isValidSecretKey(key: string): boolean {
 
 // GET /api/secrets/:widgetId/:key
 router.get('/secrets/:widgetId/:key', requireAdminToken, (req, res) => {
-  const { widgetId, key } = req.params;
+  const { widgetId, key } = req.params as { widgetId: string; key: string };
 
   if (!isValidWidgetId(widgetId) || !isValidSecretKey(key)) {
     res.status(400).json({ error: 'invalid widgetId or key' });
@@ -44,7 +44,7 @@ router.get('/secrets/:widgetId/:key', requireAdminToken, (req, res) => {
 
 // PUT /api/secrets/:widgetId/:key
 router.put('/secrets/:widgetId/:key', requireAdminToken, (req, res) => {
-  const { widgetId, key } = req.params;
+  const { widgetId, key } = req.params as { widgetId: string; key: string };
 
   if (!isValidWidgetId(widgetId) || !isValidSecretKey(key)) {
     res.status(400).json({ error: 'invalid widgetId or key' });
@@ -65,7 +65,7 @@ router.put('/secrets/:widgetId/:key', requireAdminToken, (req, res) => {
 
 // DELETE /api/secrets/:widgetId/:key
 router.delete('/secrets/:widgetId/:key', requireAdminToken, (req, res) => {
-  const { widgetId, key } = req.params;
+  const { widgetId, key } = req.params as { widgetId: string; key: string };
 
   if (!isValidWidgetId(widgetId) || !isValidSecretKey(key)) {
     res.status(400).json({ error: 'invalid widgetId or key' });
