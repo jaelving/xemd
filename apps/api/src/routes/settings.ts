@@ -12,7 +12,7 @@ function isValidWidgetId(id: string): boolean {
 
 // GET /api/settings/:widgetId
 router.get('/settings/:widgetId', (req, res) => {
-  const { widgetId } = req.params;
+  const { widgetId } = req.params as { widgetId: string };
 
   if (!isValidWidgetId(widgetId)) {
     res.status(400).json({ error: 'invalid widgetId' });
@@ -28,7 +28,7 @@ router.get('/settings/:widgetId', (req, res) => {
 
 // PUT /api/settings/:widgetId
 router.put('/settings/:widgetId', requireAdminToken, (req, res) => {
-  const { widgetId } = req.params;
+  const { widgetId } = req.params as { widgetId: string };
 
   if (!isValidWidgetId(widgetId)) {
     res.status(400).json({ error: 'invalid widgetId' });
