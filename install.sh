@@ -49,12 +49,8 @@ ok "Downloaded docker-compose.yml"
 MASTER_KEY=$(openssl rand -hex 32)
 ADMIN_TOKEN=$(openssl rand -hex 32)
 
-cat > "$INSTALL_DIR/.env" <<EOF
-XEMD_MASTER_KEY=$MASTER_KEY
-XEMD_ADMIN_TOKEN=$ADMIN_TOKEN
-XEMD_HOST_PORT=$HOST_PORT
-XEMD_API_PORT=3001
-EOF
+printf 'XEMD_MASTER_KEY=%s\nXEMD_ADMIN_TOKEN=%s\nXEMD_HOST_PORT=%s\nXEMD_API_PORT=3001\n' \
+  "$MASTER_KEY" "$ADMIN_TOKEN" "$HOST_PORT" > "$INSTALL_DIR/.env"
 
 ok "Generated encryption keys and wrote .env"
 

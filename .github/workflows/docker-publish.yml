@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions: {}
@@ -103,15 +105,23 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
 
-      - name: Upload Trivy results to GitHub Security
+      - name: Upload Trivy results (host) to GitHub Security
         uses: github/codeql-action/upload-sarif@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a # v3.35.2
         if: always()
         with:
-          sarif_file: .
-          category: trivy
+          sarif_file: trivy-host.sarif
+          category: trivy-host
 
-      # Push multi-platform images only after scans pass
+      - name: Upload Trivy results (api) to GitHub Security
+        uses: github/codeql-action/upload-sarif@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a # v3.35.2
+        if: always()
+        with:
+          sarif_file: trivy-api.sarif
+          category: trivy-api
+
+      # Push multi-platform images only after scans pass (not on PRs)
       - name: Push host image
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: .
@@ -124,6 +134,7 @@ jobs:
           cache-to: type=gha,scope=xemd-host,mode=max
 
       - name: Push API image
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: .
