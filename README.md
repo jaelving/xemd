@@ -26,6 +26,7 @@ Most widgets work out of the box with no account setup. A few tap into data sour
 |---|---|---|
 | **Stock Tracker** | Yes — Finnhub | [finnhub.io](https://finnhub.io/) — free tier |
 | **Live Radar** | Optional — FlightAware | [flightaware.com/commercial/aeroapi](https://www.flightaware.com/commercial/aeroapi/) — adds origin/dest to flights; radar works without it |
+| **Unifi Network** | Yes — Unifi API key | [account.ui.com](https://account.ui.com/) — free; generate under API Keys |
 | Everything else | None | — |
 
 Keys are stored encrypted on your own machine (AES-256-GCM) and injected server-side — they never touch the widget iframe.
@@ -102,7 +103,7 @@ XEMD_HOST_PORT=8080 XEMD_DIR=~/my-xemd curl -fsSL https://raw.githubusercontent.
 
 ## "Official" Widgets
 
-Eight widgets ship ready to use. Each has its own README with setup instructions, settings reference, and API key details.
+Nine widgets ship ready to use. Each has its own README with setup instructions, settings reference, and API key details.
 
 | Widget | API key required | README |
 |---|---|---|
@@ -114,6 +115,7 @@ Eight widgets ship ready to use. Each has its own README with setup instructions
 | [Stock Tracker](widgets/official/stock-tracker/README.md) | Yes (Finnhub — free tier) | [→](widgets/official/stock-tracker/README.md) |
 | [Live Radar](widgets/official/flight-tracker/README.md) | No (optional FlightAware for origin/dest) | [→](widgets/official/flight-tracker/README.md) |
 | [It's Almost Time...](widgets/official/countdown/README.md) | No | [→](widgets/official/countdown/README.md) |
+| [Unifi Network](widgets/official/unifi/README.md) | Yes (Unifi API key from account.ui.com) | [→](widgets/official/unifi/README.md) |
 
 ---
 
