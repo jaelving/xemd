@@ -30,8 +30,16 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/widget-types/package.json ./packages/widget-types/
 
-# Install production deps only
-RUN pnpm install --frozen-lockfile --prod
+# Install production deps only, then strip all package managers (not needed at runtime)
+RUN pnpm install --frozen-lockfile --prod && \
+    rm -rf /root/.cache/node/corepack \
+           /usr/local/lib/node_modules/npm \
+           /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/corepack \
+           /usr/local/bin/pnpm \
+           /usr/local/bin/pnpx
 
 # Copy built output
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
